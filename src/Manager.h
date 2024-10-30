@@ -16,8 +16,8 @@ namespace ClassProject {
 class Manager : public ManagerInterface {
 private:
 // Constants
-    const static BDD_ID FalseID = 0;
-    const static BDD_ID TrueID = 1;
+    BDD_ID FalseID = 0;
+    BDD_ID TrueID = 1;
 public:
 // Constructor
     Manager(); // implemented in Manager.cpp
