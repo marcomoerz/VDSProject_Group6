@@ -1,0 +1,27 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure Cmake
+      run: cmake --preset ci
+
+    - name: Build Cmake
+      run: cmake --build build -j4
+
+    - name: Test
+      working-directory: build
+      run: ctest
