@@ -5,7 +5,7 @@
 namespace ClassProject {
 
 Manager::Manager() {
-    // TODO This should also add 0 and 1 to the table
+    // TODO
 }
 
 BDD_ID Manager::createVar(const std::string &label) {
@@ -13,11 +13,11 @@ BDD_ID Manager::createVar(const std::string &label) {
 }
 
 const BDD_ID &Manager::True() {
-    return TrueID;
+    return 0;
 }
 
 const BDD_ID &Manager::False() {
-    return FalseID;
+    return 0;
 }
 
 bool Manager::isConstant(BDD_ID f) {

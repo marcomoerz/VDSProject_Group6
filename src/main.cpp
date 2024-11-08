@@ -10,6 +10,5 @@ using namespace ClassProject;
 
 int main(int argc, char* argv[])
 {
-    Manager mgr;
     std::cout << "Nothing implemented, yet" << std::endl;
 }

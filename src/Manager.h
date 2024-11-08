@@ -14,10 +14,6 @@ namespace ClassProject {
 
 
 class Manager : public ManagerInterface {
-private:
-// Constants
-    BDD_ID FalseID = 0;
-    BDD_ID TrueID = 1;
 public:
 // Constructor
     Manager(); // implemented in Manager.cpp
@@ -51,8 +47,8 @@ public:
     void findVars(const BDD_ID &root, std::set<BDD_ID> &vars_of_root) override;
     size_t uniqueTableSize() override;
     void visualizeBDD(std::string filepath, BDD_ID &root) override;
-private:
-// TODO Private methods and variables
+protected:
+// TODO Protected methods and variables
 
 };
 
