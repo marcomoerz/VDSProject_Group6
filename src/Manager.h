@@ -12,7 +12,8 @@
 
 namespace ClassProject {
 
-
+static const BDD_ID FalseId = 0;
+static const BDD_ID TrueId = 1;
 class Manager : public ManagerInterface {
 public:
 // Constructor
@@ -50,13 +51,12 @@ public:
 protected:
 // TODO Protected methods and variables
     struct Node {
-        BDD_ID id;
         BDD_ID topVar;
         BDD_ID high;
         BDD_ID low;
-        Node(BDD_ID id, BDD_ID topVar, BDD_ID high, BDD_ID low) : id(id), topVar(topVar), high(high), low(low) {}
+        Node(BDD_ID topVar, BDD_ID high, BDD_ID low) : topVar(topVar), high(high), low(low) {}
         bool operator==(const Node &rhs) const {
-            return id == rhs.id && topVar == rhs.topVar && high == rhs.high && low == rhs.low;
+            return topVar == rhs.topVar && high == rhs.high && low == rhs.low;
         }
     };
     std::unordered_map<BDD_ID, Node> uniqueTable;

@@ -6,6 +6,8 @@ namespace ClassProject {
 
 Manager::Manager() {
     // TODO
+    uniqueTable.emplace(False(), Node{0, 0, 0});
+    uniqueTable.emplace(True(), Node{1, 1, 1});
 }
 
 BDD_ID Manager::createVar(const std::string &label) {
@@ -13,11 +15,11 @@ BDD_ID Manager::createVar(const std::string &label) {
 }
 
 const BDD_ID &Manager::True() {
-    return 0;
+    return TrueId;
 }
 
 const BDD_ID &Manager::False() {
-    return 0;
+    return FalseId;
 }
 
 bool Manager::isConstant(BDD_ID f) {
