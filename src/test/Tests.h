@@ -55,4 +55,23 @@ TEST_F(ManagerTest, Node) {
     EXPECT_FALSE(ManagerImpl::Node(1, 1, 1) == ManagerImpl::Node(0, 1, 1));
 }
 
+TEST_F(ManagerTest, ManagerTerminations) {
+    EXPECT_EQ(mgr.True(), 1);
+    EXPECT_EQ(mgr.False(), 0);
+}
+
+TEST_F(ManagerTest, ManagerConstructor) {
+    // Get uniqueTable from ManagerImpl
+    auto map = mgr.getMap();
+
+    // Test Default Contructor added termination nodes
+    EXPECT_EQ(map.size(), 2);
+
+    // Test termination nodes in uniqueTable
+    EXPECT_NE(map.find(mgr.False()), map.end());
+    EXPECT_EQ(map.find(mgr.False())->second, ManagerImpl::Node(0, 0, 0));
+    EXPECT_NE(map.find(mgr.True()), map.end());
+    EXPECT_EQ(map.find(mgr.True())->second, ManagerImpl::Node(1, 1, 1));
+}
+
 #endif
