@@ -8,6 +8,7 @@
 #include "ManagerInterface.h"
 
 #include <string>
+#include <unordered_map>
 
 namespace ClassProject {
 
@@ -48,7 +49,17 @@ public:
     void visualizeBDD(std::string filepath, BDD_ID &root) override;
 protected:
 // TODO Protected methods and variables
-
+    struct Node {
+        BDD_ID id;
+        BDD_ID topVar;
+        BDD_ID high;
+        BDD_ID low;
+        Node(BDD_ID id, BDD_ID topVar, BDD_ID high, BDD_ID low) : id(id), topVar(topVar), high(high), low(low) {}
+        bool operator==(const Node &rhs) const {
+            return id == rhs.id && topVar == rhs.topVar && high == rhs.high && low == rhs.low;
+        }
+    };
+    std::unordered_map<BDD_ID, Node> uniqueTable;
 };
 
 } // namespace ClassProject
