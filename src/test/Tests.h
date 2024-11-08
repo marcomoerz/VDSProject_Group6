@@ -17,6 +17,7 @@ using namespace ClassProject;
  */
 class ManagerImpl : public Manager {
 public:
+    using Node = Manager::Node;
     ManagerImpl() : Manager() {}
 
     /**
@@ -40,9 +41,18 @@ public:
     ManagerImpl mgr;
 };
 
-TEST_F(ManagerTest, BasicTest) {
-    auto map = mgr.getMap();
-    EXPECT_EQ(map.size(), 0);
+
+TEST_F(ManagerTest, Node) {
+    // Test Node constructor
+    EXPECT_EQ(ManagerImpl::Node(1, 2, 3).topVar, 1);
+    EXPECT_EQ(ManagerImpl::Node(1, 2, 3).high, 2);
+    EXPECT_EQ(ManagerImpl::Node(1, 2, 3).low, 3);
+
+    // Test Node.operator==
+    EXPECT_EQ(ManagerImpl::Node(1, 1, 1), ManagerImpl::Node(1, 1, 1));
+    EXPECT_FALSE(ManagerImpl::Node(1, 1, 1) == ManagerImpl::Node(1, 1, 0));
+    EXPECT_FALSE(ManagerImpl::Node(1, 1, 1) == ManagerImpl::Node(1, 0, 1));
+    EXPECT_FALSE(ManagerImpl::Node(1, 1, 1) == ManagerImpl::Node(0, 1, 1));
 }
 
 #endif
