@@ -7,8 +7,10 @@
 
 #include "ManagerInterface.h"
 
+#include <iostream>
 #include <string>
 #include <unordered_map>
+#include <array>
 
 namespace ClassProject {
 
@@ -54,12 +56,25 @@ protected:
         BDD_ID topVar;
         BDD_ID high;
         BDD_ID low;
-        Node(BDD_ID topVar, BDD_ID high, BDD_ID low) : topVar(topVar), high(high), low(low) {}
+        std::string label;
+        Node(BDD_ID topVar, BDD_ID high, BDD_ID low, std::string label) : topVar(topVar), high(high), low(low), label(label) {}
+        Node(BDD_ID topVar, BDD_ID high, BDD_ID low) : topVar(topVar), high(high), low(low), label("") {}
         bool operator==(const Node &rhs) const {
             return topVar == rhs.topVar && high == rhs.high && low == rhs.low;
         }
     };
     std::unordered_map<BDD_ID, Node> uniqueTable;
+    std::unordered_map<std::string, BDD_ID> reverseTable;
+    BDD_ID nextID = 0;
+public:
+    Node getNode(BDD_ID f) {return uniqueTable.at(f);}
+    void printTable() {
+        std::cout << "ID || High | Low | Top-Var | Label" << std::endl;
+        std::cout << "----------------------------------" << std::endl;
+        for (auto &it : uniqueTable) {
+            std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << it.second.label << std::endl;
+        }
+    }
 };
 
 } // namespace ClassProject
