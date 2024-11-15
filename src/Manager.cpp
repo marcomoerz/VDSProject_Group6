@@ -219,8 +219,10 @@ void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
     }
 
     gvLayout(gvc, g, "dot");
-    gvRenderFilename(gvc, g, "png", "BDD.png");
-    gvRenderFilename(gvc, g, "dot", "BDD.dot");
+    std::string png = filepath + "/BDD.png";
+    std::string dot = filepath + "/BDD.dot";
+    gvRenderFilename(gvc, g, "png", png.c_str());
+    gvRenderFilename(gvc, g, "dot", dot.c_str());
     gvFreeLayout(gvc, g);
     agclose(g);
 }

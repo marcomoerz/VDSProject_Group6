@@ -11,6 +11,13 @@ using namespace ClassProject;
 
 int main(int argc, char* argv[])
 {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <output_folder>" << std::endl;
+        return 1;
+    }
+
+    std::string output_folder = argv[1];
+
     Manager mn = Manager();
     BDD_ID a = mn.createVar("a");
     BDD_ID b = mn.createVar("b");
@@ -29,5 +36,5 @@ int main(int argc, char* argv[])
         std::cout << " " << it;
     }
     std::cout << std::endl;
-    mn.visualizeBDD("BDD.png", f3);
+    mn.visualizeBDD(output_folder, f3);
 }
