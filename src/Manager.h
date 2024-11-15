@@ -71,6 +71,9 @@ protected:
     std::unordered_map<Node, BDD_ID, NodeHash> reverseTable; // topVar, high, low -> ID
     std::unordered_map<BDD_ID, std::string> labelTable;
     std::unordered_map<std::string, BDD_ID> reverselabelTable;
+    std::unordered_map<Node, BDD_ID, NodeHash> iteTable;
+    std::unordered_map<Node, BDD_ID, NodeHash> coTrueTable;
+    std::unordered_map<Node, BDD_ID, NodeHash> coFalseTable;
     BDD_ID nextID = 0;
 public:
     Node getNode(BDD_ID f) {return uniqueTable.at(f);}
