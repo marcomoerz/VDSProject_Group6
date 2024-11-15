@@ -70,16 +70,19 @@ BDD_ID Manager::ite(BDD_ID i, BDD_ID t, BDD_ID e) {
     else if (t == e) return t;
     else if (t == TrueId && e == FalseId) return i;
     else {
-        auto it2 = iteTable.find({i, t, e});
-        if (it2 != iteTable.end()) {
-            return it2->second;
+        auto iteIt = iteTable.find(Node{i, t, e});
+        if (iteIt != iteTable.end()) {
+            return iteIt->second;
         }
         BDD_ID top = topVar(i);
         if (topVar(t) < top && isVariable(topVar(t))) top = topVar(t);
         if (topVar(e) < top && isVariable(topVar(e))) top = topVar(e);
         BDD_ID high = ite(coFactorTrue(i, top), coFactorTrue(t, top), coFactorTrue(e, top));
         BDD_ID low = ite(coFactorFalse(i, top), coFactorFalse(t, top), coFactorFalse(e, top));
-        if (high == low) return high;
+        if (high == low) {
+            iteTable.emplace(Node{i, t, e}, high);
+            return high;
+        }
         auto it = reverseTable.find({top, high, low});
         if (it == reverseTable.end()) {
             uniqueTable.emplace(nextID, Node{top, high, low});
@@ -87,8 +90,10 @@ BDD_ID Manager::ite(BDD_ID i, BDD_ID t, BDD_ID e) {
             auto label = labelTable.at(top) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
             labelTable[nextID] = label;
             reverselabelTable[label] = nextID;
+            iteTable.emplace(Node{i, t, e}, nextID);
             return nextID++;
         } else {
+            iteTable.emplace(Node{i, t, e}, it->second);
             return it->second;
         }
     }
@@ -98,9 +103,16 @@ BDD_ID Manager::coFactorTrue(BDD_ID f, BDD_ID x) {
     if (topVar(f) > x || topVar(f) <= 1) return f;
     if (topVar(f) == x) return uniqueTable.at(f).high;
     else {
+        auto coTrueIt = coTrueTable.find(Node{f, x, 0});
+        if (coTrueIt != coTrueTable.end()) {
+            return coTrueIt->second;
+        }
         BDD_ID high = coFactorTrue(uniqueTable.at(f).high, x);
         BDD_ID low = coFactorTrue(uniqueTable.at(f).low, x);
-        if (high == low) return high;
+        if (high == low) {
+            coTrueTable.emplace(Node{f, x, 0}, high);
+            return high;
+        }
         auto it = reverseTable.find(Node{topVar(f), high, low});
         if (it == reverseTable.end()) {
             uniqueTable.emplace(nextID, Node{topVar(f), high, low});
@@ -108,8 +120,10 @@ BDD_ID Manager::coFactorTrue(BDD_ID f, BDD_ID x) {
             labelTable[nextID] = label;
             reverseTable[Node{f, high, low}] = nextID;
             reverseTable[Node{topVar(f), high, low}] = nextID;
+            coTrueTable.emplace(Node{f, x, 0}, nextID);
             return nextID++;
         } else {
+            coTrueTable.emplace(Node{f, x, 0}, it->second);
             return it->second;
         }
     }
@@ -119,9 +133,16 @@ BDD_ID Manager::coFactorFalse(BDD_ID f, BDD_ID x) {
     if (topVar(f) > x || topVar(f) <= 1) return f;
     if (topVar(f) == x) return uniqueTable.at(f).low;
     else {
+        auto coFalseIt = coFalseTable.find(Node{f, x, 0});
+        if (coFalseIt != coFalseTable.end()) {
+            return coFalseIt->second;
+        }
         BDD_ID high = coFactorFalse(uniqueTable.at(f).high, x);
         BDD_ID low = coFactorFalse(uniqueTable.at(f).low, x);
-        if (high == low) return high;
+        if (high == low) {
+            coFalseTable.emplace(Node{f, x, 0}, high);
+            return high;
+        }
         auto it = reverseTable.find({topVar(f), high, low});
         if (it == reverseTable.end()) {
             uniqueTable.emplace(nextID, Node{topVar(f), high, low});
@@ -129,8 +150,10 @@ BDD_ID Manager::coFactorFalse(BDD_ID f, BDD_ID x) {
             labelTable[nextID] = label;
             reverselabelTable[label] = nextID;
             reverseTable[Node{f, high, low}] = nextID;
+            coFalseTable.emplace(Node{f, x, 0}, nextID);
             return nextID++;
         } else {
+            coFalseTable.emplace(Node{f, x, 0}, it->second);
             return it->second;
         }
     }
