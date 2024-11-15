@@ -7,6 +7,12 @@
 #include <string>
 #include <gvc.h>
 
+extern gvplugin_library_t gvplugin_dot_layout_LTX_library;
+extern gvplugin_library_t gvplugin_core_LTX_library;
+extern gvplugin_library_t gvplugin_gd_LTX_library;
+
+GVC_t *gvc = gvContext();
+
 namespace ClassProject {
 
 Manager::Manager() {
@@ -20,6 +26,9 @@ Manager::Manager() {
     reverseTable[Node{TrueId, TrueId, TrueId}] = TrueId;
     reverseTable[Node{FalseId, FalseId, FalseId}] = FalseId;
     nextID = 2;
+    gvAddLibrary(gvc, &gvplugin_dot_layout_LTX_library);
+    gvAddLibrary(gvc, &gvplugin_core_LTX_library);
+    gvAddLibrary(gvc, &gvplugin_gd_LTX_library);
 }
 
 BDD_ID Manager::createVar(const std::string &label) {
@@ -192,7 +201,6 @@ size_t Manager::uniqueTableSize() {
 }
 
 void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
-    GVC_t *gvc = gvContext();
     Agraph_t *g = agopen("BDD", Agdirected, 0);
     std::set<BDD_ID> nodeSet;
     findNodes(root, nodeSet);
@@ -212,6 +220,7 @@ void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
 
     gvLayout(gvc, g, "dot");
     gvRenderFilename(gvc, g, "png", "BDD.png");
+    gvRenderFilename(gvc, g, "dot", "BDD.dot");
     gvFreeLayout(gvc, g);
     agclose(g);
 }

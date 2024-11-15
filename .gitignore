@@ -1,3 +1,5 @@
 gtest/
 build/
 .vscode/
+*.dot
+*.png
