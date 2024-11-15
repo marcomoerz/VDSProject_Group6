@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <array>
 #include <string>
+#include <gvc.h>
 
 namespace ClassProject {
 

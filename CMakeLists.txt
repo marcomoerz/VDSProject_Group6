@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(VDSProject CXX C)
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC -std=c++17 ${LLVM_CXX_FLAGS} ")
 include(CTest)
+include(FetchContent)
 
 
 # Download and unpack googletest at configure time
@@ -18,6 +19,14 @@ execute_process(COMMAND ${CMAKE_COMMAND} --build .
 if(result)
     message(FATAL_ERROR "Build step for googletest failed: ${result}")
 endif()
+
+# include graphviz
+FetchContent_Declare(
+        graphviz
+        GIT_REPOSITORY https://gitlab.com/graphviz/graphviz.git
+        GIT_TAG 12.2.0
+)
+FetchContent_MakeAvailable(graphviz)
 
 # Add googletest directly to our build. This defines
 # the gtest and gtest_main targets.
