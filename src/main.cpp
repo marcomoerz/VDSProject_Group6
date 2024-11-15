@@ -11,12 +11,13 @@ using namespace ClassProject;
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <output_folder>" << std::endl;
+    std::string output_folder = ".";
+    if (argc == 2) {
+        output_folder = argv[1];
+    } else if(argc > 2) {
+        std::cerr << "Usage: " << argv[0] << " [output_folder]" << std::endl;
         return 1;
     }
-
-    std::string output_folder = argv[1];
 
     Manager mn = Manager();
     BDD_ID a = mn.createVar("a");
