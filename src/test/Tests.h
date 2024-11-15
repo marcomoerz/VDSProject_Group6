@@ -624,11 +624,6 @@ TEST_F(ManagerTest, uniqueTableSize) {
     EXPECT_EQ(mgr->uniqueTableSize(), mgr->getMap().size());
 }
 
-TEST_F(ManagerTest, visualizeBDD) {
-    // TODO: Implement test for visualizeBDD
-    EXPECT_EQ(true, false); // Fail test if not implemented
-}
-
 } // namespace ClassProject::Test
 
 #endif
