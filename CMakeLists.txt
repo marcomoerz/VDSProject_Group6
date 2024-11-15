@@ -26,6 +26,9 @@ FetchContent_Declare(
         GIT_REPOSITORY https://gitlab.com/graphviz/graphviz.git
         GIT_TAG 12.2.0
 )
+
+set(WITH_PNG ON CACHE BOOL "Enable PNG support")
+
 FetchContent_MakeAvailable(graphviz)
 
 # Add googletest directly to our build. This defines
