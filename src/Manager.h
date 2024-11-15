@@ -56,15 +56,21 @@ protected:
         BDD_ID topVar;
         BDD_ID high;
         BDD_ID low;
-        std::string label;
-        Node(BDD_ID topVar, BDD_ID high, BDD_ID low, std::string label) : topVar(topVar), high(high), low(low), label(label) {}
-        Node(BDD_ID topVar, BDD_ID high, BDD_ID low) : topVar(topVar), high(high), low(low), label("") {}
+        Node(BDD_ID topVar, BDD_ID high, BDD_ID low) : topVar(topVar), high(high), low(low) {}
         bool operator==(const Node &rhs) const {
             return topVar == rhs.topVar && high == rhs.high && low == rhs.low;
         }
     };
+
+    struct NodeHash {
+        std::size_t operator()(const Node &node) const {
+            return std::hash<BDD_ID>()(node.topVar) ^ std::hash<BDD_ID>()(node.high) ^ std::hash<BDD_ID>()(node.low);
+        }
+    };
     std::unordered_map<BDD_ID, Node> uniqueTable;
-    std::unordered_map<std::string, BDD_ID> reverseTable;
+    std::unordered_map<Node, BDD_ID, NodeHash> reverseTable; // topVar, high, low -> ID
+    std::unordered_map<BDD_ID, std::string> labelTable;
+    std::unordered_map<std::string, BDD_ID> reverselabelTable;
     BDD_ID nextID = 0;
 public:
     Node getNode(BDD_ID f) {return uniqueTable.at(f);}
@@ -72,7 +78,7 @@ public:
         std::cout << "ID || High | Low | Top-Var | Label" << std::endl;
         std::cout << "----------------------------------" << std::endl;
         for (auto &it : uniqueTable) {
-            std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << it.second.label << std::endl;
+            std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << labelTable.at(it.first) << std::endl;
         }
     }
 };

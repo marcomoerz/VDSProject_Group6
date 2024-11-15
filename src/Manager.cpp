@@ -10,22 +10,24 @@ namespace ClassProject {
 
 Manager::Manager() {
     // TODO
-    uniqueTable.emplace(False(), Node{FalseId, FalseId, FalseId, "0"});
-    uniqueTable.emplace(True(), Node{TrueId, TrueId, TrueId, "1"});
-    std::string tag1 = std::to_string(TrueId) + std::to_string(TrueId) + std::to_string(TrueId);
-    reverseTable[tag1] = TrueId;
-    std::string tag0 = std::to_string(FalseId) + std::to_string(FalseId) + std::to_string(FalseId);
-    reverseTable[tag0] = FalseId;
+    uniqueTable.emplace(False(), Node{FalseId, FalseId, FalseId});
+    uniqueTable.emplace(True(), Node{TrueId, TrueId, TrueId});
+    labelTable[TrueId] = "1";
+    reverselabelTable["1"] = TrueId;
+    labelTable[FalseId] = "0";
+    reverselabelTable["0"] = FalseId;
+    reverseTable[Node{TrueId, TrueId, TrueId}] = TrueId;
+    reverseTable[Node{FalseId, FalseId, FalseId}] = FalseId;
     nextID = 2;
 }
 
 BDD_ID Manager::createVar(const std::string &label) {
-    auto it = reverseTable.find(label);
-    if (it == reverseTable.end()) {
-        uniqueTable.emplace(nextID, Node{nextID, TrueId, FalseId, label + " ? 1 : 0"});
-        std::string tag = std::to_string(nextID) + std::to_string(TrueId) + std::to_string(FalseId);
-        reverseTable[tag] = nextID;
-        reverseTable[label] = nextID;
+    auto it = reverselabelTable.find(label);
+    if (it == reverselabelTable.end()) {
+        uniqueTable.emplace(nextID, Node{nextID, TrueId, FalseId});
+        reverseTable[Node{nextID, TrueId, FalseId}] = nextID;
+        labelTable[nextID] = label; // label + " ? 1 : 0";
+        reverselabelTable[label] = nextID;
         return nextID++;
     } else {
         return it->second;
@@ -64,11 +66,13 @@ BDD_ID Manager::ite(BDD_ID i, BDD_ID t, BDD_ID e) {
         BDD_ID high = ite(coFactorTrue(i, top), coFactorTrue(t, top), coFactorTrue(e, top));
         BDD_ID low = ite(coFactorFalse(i, top), coFactorFalse(t, top), coFactorFalse(e, top));
         if (high == low) return high;
-        std::string check = std::to_string(top) + std::to_string(high) + std::to_string(low);
-        auto it = reverseTable.find(check);
+        auto it = reverseTable.find({top, high, low});
         if (it == reverseTable.end()) {
-            uniqueTable.emplace(nextID, Node{top, high, low, uniqueTable.at(top).label.substr(0, 1) + " ? (" + uniqueTable.at(high).label + ") : (" + uniqueTable.at(low).label + ")"});
-            reverseTable[check] = nextID;
+            uniqueTable.emplace(nextID, Node{top, high, low});
+            reverseTable[Node{top, high, low}] = nextID;
+            auto label = labelTable.at(top) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
+            labelTable[nextID] = label;
+            reverselabelTable[label] = nextID;
             return nextID++;
         } else {
             return it->second;
@@ -83,11 +87,13 @@ BDD_ID Manager::coFactorTrue(BDD_ID f, BDD_ID x) {
         BDD_ID high = coFactorTrue(uniqueTable.at(f).high, x);
         BDD_ID low = coFactorTrue(uniqueTable.at(f).low, x);
         if (high == low) return high;
-        std::string check = std::to_string(topVar(f)) + std::to_string(high) + std::to_string(low);
-        auto it = reverseTable.find(check);
+        auto it = reverseTable.find(Node{topVar(f), high, low});
         if (it == reverseTable.end()) {
-            uniqueTable.emplace(nextID, Node{topVar(f), high, low, uniqueTable.at(topVar(f)).label.substr(0, 1) + " ? (" + uniqueTable.at(high).label + ") : (" + uniqueTable.at(low).label + ")"});
-            reverseTable[check] = nextID;
+            uniqueTable.emplace(nextID, Node{topVar(f), high, low});
+            auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
+            labelTable[nextID] = label;
+            reverseTable[Node{f, high, low}] = nextID;
+            reverseTable[Node{topVar(f), high, low}] = nextID;
             return nextID++;
         } else {
             return it->second;
@@ -102,11 +108,13 @@ BDD_ID Manager::coFactorFalse(BDD_ID f, BDD_ID x) {
         BDD_ID high = coFactorFalse(uniqueTable.at(f).high, x);
         BDD_ID low = coFactorFalse(uniqueTable.at(f).low, x);
         if (high == low) return high;
-        std::string check = std::to_string(topVar(f)) + std::to_string(high) + std::to_string(low);
-        auto it = reverseTable.find(check);
+        auto it = reverseTable.find({topVar(f), high, low});
         if (it == reverseTable.end()) {
-            uniqueTable.emplace(nextID, Node{topVar(f), high, low, uniqueTable.at(topVar(f)).label.substr(0, 1) + " ? (" + uniqueTable.at(high).label + ") : (" + uniqueTable.at(low).label + ")"});
-            reverseTable[check] = nextID;
+            uniqueTable.emplace(nextID, Node{topVar(f), high, low});
+            auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
+            labelTable[nextID] = label;
+            reverselabelTable[label] = nextID;
+            reverseTable[Node{f, high, low}] = nextID;
             return nextID++;
         } else {
             return it->second;
@@ -151,7 +159,7 @@ BDD_ID Manager::xnor2(BDD_ID a, BDD_ID b) {
 }
 
 std::string Manager::getTopVarName(const BDD_ID &root) {
-    return uniqueTable.at(topVar(root)).label.substr(0, 1);
+    return labelTable.at(topVar(root));
 }
 
 void Manager::findNodes(const BDD_ID &root, std::set<BDD_ID> &nodes_of_root) {
