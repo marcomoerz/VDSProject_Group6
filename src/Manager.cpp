@@ -61,6 +61,10 @@ BDD_ID Manager::ite(BDD_ID i, BDD_ID t, BDD_ID e) {
     else if (t == e) return t;
     else if (t == TrueId && e == FalseId) return i;
     else {
+        auto it2 = iteTable.find({i, t, e});
+        if (it2 != iteTable.end()) {
+            return it2->second;
+        }
         BDD_ID top = topVar(i);
         if (topVar(t) < top && isVariable(topVar(t))) top = topVar(t);
         if (topVar(e) < top && isVariable(topVar(e))) top = topVar(e);
@@ -188,7 +192,28 @@ size_t Manager::uniqueTableSize() {
 }
 
 void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
-    // TODO
+    GVC_t *gvc = gvContext();
+    Agraph_t *g = agopen("BDD", Agdirected, 0);
+    std::set<BDD_ID> nodeSet;
+    findNodes(root, nodeSet);
+    std::unordered_map<BDD_ID, Agnode_t*> nodeMap;
+    for (auto &i : nodeSet) {
+        Agnode_t *n = agnode(g, labelTable.at(i).data(), 1);
+        nodeMap.emplace(i, n);
+    }
+    for (auto &i : nodeSet) {
+        if (i <= 1) continue;
+        BDD_ID high = uniqueTable.at(i).high;
+        BDD_ID low = uniqueTable.at(i).low;
+        Agedge_t *h = agedge(g, nodeMap.at(i), nodeMap.at(high), 0, 1);
+        Agedge_t *l = agedge(g, nodeMap.at(i), nodeMap.at(low), 0, 1);
+        agsafeset(l, "style", "dotted", "");
+    }
+
+    gvLayout(gvc, g, "dot");
+    gvRenderFilename(gvc, g, "png", "BDD.png");
+    gvFreeLayout(gvc, g);
+    agclose(g);
 }
 
 } // namespace ClassProject
