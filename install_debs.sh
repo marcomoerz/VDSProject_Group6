@@ -1,1 +1,1 @@
-sudo apt-get install flex bison libann-dev pkg-config libcairo2-dev libgts-dev libfreetype6-dev freeglut3-dev libfontconfig1-dev libgtk2.0-dev libgtkglext1-dev libxrender-dev libgd-dev libglade2-dev qtbase5-dev libpng-dev
+sudo apt-get install -y flex bison libann-dev pkg-config libcairo2-dev libgts-dev libfreetype6-dev freeglut3-dev libfontconfig1-dev libgtk2.0-dev libgtkglext1-dev libxrender-dev libgd-dev libglade2-dev qtbase5-dev libpng-dev
