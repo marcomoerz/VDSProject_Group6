@@ -19,10 +19,10 @@ Manager::Manager() {
     // TODO
     uniqueTable.emplace(False(), Node{FalseId, FalseId, FalseId});
     uniqueTable.emplace(True(), Node{TrueId, TrueId, TrueId});
-    labelTable[TrueId] = "1";
-    reverselabelTable["1"] = TrueId;
-    labelTable[FalseId] = "0";
-    reverselabelTable["0"] = FalseId;
+    labelTable[TrueId] = "True";
+    reverselabelTable["True"] = TrueId;
+    labelTable[FalseId] = "False";
+    reverselabelTable["False"] = FalseId;
     reverseTable[Node{TrueId, TrueId, TrueId}] = TrueId;
     reverseTable[Node{FalseId, FalseId, FalseId}] = FalseId;
     nextID = 2;
@@ -210,9 +210,9 @@ void Manager::findNodes(const BDD_ID &root, std::set<BDD_ID> &nodes_of_root) {
 }
 
 void Manager::findVars(const BDD_ID &root, std::set<BDD_ID> &vars_of_root) {
-    vars_of_root.insert(topVar(root));
     if (root <= 1) return;
     else {
+        vars_of_root.insert(topVar(root));
         findVars(uniqueTable.at(root).high, vars_of_root);
         findVars(uniqueTable.at(root).low, vars_of_root);
         return;
