@@ -25,7 +25,7 @@ public:
     Manager &operator=(const Manager &mgr) = default; // copy assignment
     Manager &operator=(Manager &&mgr) = default; // move assignment
 // Destructor
-    ~Manager() override = default; // destructor // TODO should be virtual in ManagerInterface.h
+    ~Manager() /*override*/ = default; // destructor // TODO should be virtual in ManagerInterface.h
 // ManagerInterface
     BDD_ID createVar(const std::string &label) override;
     const BDD_ID &True() override;
