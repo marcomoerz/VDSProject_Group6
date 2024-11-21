@@ -16,7 +16,6 @@ GVC_t *gvc = gvContext();
 namespace ClassProject {
 
 Manager::Manager() {
-    // TODO
     uniqueTable.emplace(False(), Node{FalseId, FalseId, FalseId});
     uniqueTable.emplace(True(), Node{TrueId, TrueId, TrueId});
     labelTable[TrueId] = "True";
@@ -224,7 +223,8 @@ size_t Manager::uniqueTableSize() {
 }
 
 void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
-    Agraph_t *g = agopen("BDD", Agdirected, 0);
+    char name[] = "BDD";
+    Agraph_t *g = agopen(name, Agdirected, 0);
     std::set<BDD_ID> nodeSet;
     findNodes(root, nodeSet);
     std::unordered_map<BDD_ID, Agnode_t*> nodeMap;
@@ -238,7 +238,10 @@ void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
         BDD_ID low = uniqueTable.at(i).low;
         Agedge_t *h = agedge(g, nodeMap.at(i), nodeMap.at(high), 0, 1);
         Agedge_t *l = agedge(g, nodeMap.at(i), nodeMap.at(low), 0, 1);
-        agsafeset(l, "style", "dotted", "");
+        char stylename[] = "style";
+        char stylevalue[] = "dotted";
+        char styledef[] = "solid";
+        agsafeset(l, stylename, stylevalue, styledef);
     }
 
     gvLayout(gvc, g, "dot");
