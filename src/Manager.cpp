@@ -240,7 +240,7 @@ void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
         Agedge_t *l = agedge(g, nodeMap.at(i), nodeMap.at(low), 0, 1);
         char stylename[] = "style";
         char stylevalue[] = "dotted";
-        char styledef[] = "solid";
+        char styledef[] = "";
         agsafeset(l, stylename, stylevalue, styledef);
     }
 
