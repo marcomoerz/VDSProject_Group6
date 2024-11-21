@@ -64,24 +64,34 @@ BDD_ID Manager::topVar(BDD_ID f) {
 }
 
 BDD_ID Manager::ite(BDD_ID i, BDD_ID t, BDD_ID e) {
+    // Terminal cases
     if (i == TrueId) return t;
     else if (i == FalseId) return e;
     else if (t == e) return t;
     else if (t == TrueId && e == FalseId) return i;
     else {
+        // Check if the node already exists
         auto iteIt = iteTable.find(Node{i, t, e});
         if (iteIt != iteTable.end()) {
             return iteIt->second;
         }
+
+        // Find the top variable with the lowest index
         BDD_ID top = topVar(i);
         if (topVar(t) < top && isVariable(topVar(t))) top = topVar(t);
         if (topVar(e) < top && isVariable(topVar(e))) top = topVar(e);
+
+        // Calculate the high and low successors with a recursive call
         BDD_ID high = ite(coFactorTrue(i, top), coFactorTrue(t, top), coFactorTrue(e, top));
         BDD_ID low = ite(coFactorFalse(i, top), coFactorFalse(t, top), coFactorFalse(e, top));
+        
+        // If the high and low successors are the same. The initial ite call is reduced to the high successor
         if (high == low) {
             iteTable.emplace(Node{i, t, e}, high);
             return high;
         }
+
+        // Check if the node already exists
         auto it = reverseTable.find({top, high, low});
         if (it == reverseTable.end()) {
             uniqueTable.emplace(nextID, Node{top, high, low});
