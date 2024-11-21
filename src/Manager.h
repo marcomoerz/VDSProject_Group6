@@ -25,7 +25,7 @@ public:
     Manager &operator=(const Manager &mgr) = default; // copy assignment
     Manager &operator=(Manager &&mgr) = default; // move assignment
 // Destructor
-    ~Manager() /*override*/ = default; // destructor // TODO should be virtual in ManagerInterface.h
+    ~Manager() override = default; // destructor // TODO should be virtual in ManagerInterface.h
 // ManagerInterface
     /**
      * @brief Create a new variable with the given label. The label is used to identify the variable in the BDD.
