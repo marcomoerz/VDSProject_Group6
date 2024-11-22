@@ -52,7 +52,7 @@ const BDD_ID &Manager::False() {
 }
 
 bool Manager::isConstant(BDD_ID f) {
-    return f <= 1;
+    return f <= TrueId;
 }
 
 bool Manager::isVariable(BDD_ID x) {
@@ -109,7 +109,7 @@ BDD_ID Manager::ite(BDD_ID i, BDD_ID t, BDD_ID e) {
 }
 
 BDD_ID Manager::coFactorTrue(BDD_ID f, BDD_ID x) {
-    if (topVar(f) > x || topVar(f) <= 1) return f;
+    if (topVar(f) > x || topVar(f) <= TrueId) return f;
     if (topVar(f) == x) return uniqueTable.at(f).high;
     else {
         auto coTrueIt = coTrueTable.find(Node{f, x, 0});
@@ -139,7 +139,7 @@ BDD_ID Manager::coFactorTrue(BDD_ID f, BDD_ID x) {
 }
 
 BDD_ID Manager::coFactorFalse(BDD_ID f, BDD_ID x) {
-    if (topVar(f) > x || topVar(f) <= 1) return f;
+    if (topVar(f) > x || topVar(f) <= TrueId) return f;
     if (topVar(f) == x) return uniqueTable.at(f).low;
     else {
         auto coFalseIt = coFalseTable.find(Node{f, x, 0});
@@ -209,8 +209,8 @@ std::string Manager::getTopVarName(const BDD_ID &root) {
 }
 
 void Manager::findNodes(const BDD_ID &root, std::set<BDD_ID> &nodes_of_root) {
-    nodes_of_root.insert(root);
-    if (root <= 1) return;
+    auto in = nodes_of_root.insert(root);
+    if (!in.second || root <= TrueId) return; // No insertion or constant value
     else {
         findNodes(uniqueTable.at(root).high, nodes_of_root);
         findNodes(uniqueTable.at(root).low, nodes_of_root);
@@ -219,12 +219,13 @@ void Manager::findNodes(const BDD_ID &root, std::set<BDD_ID> &nodes_of_root) {
 }
 
 void Manager::findVars(const BDD_ID &root, std::set<BDD_ID> &vars_of_root) {
-    if (root <= 1) return;
-    else {
-        vars_of_root.insert(topVar(root));
-        findVars(uniqueTable.at(root).high, vars_of_root);
-        findVars(uniqueTable.at(root).low, vars_of_root);
-        return;
+    std::set<BDD_ID> nodes;
+    findNodes(root, nodes);
+    for (auto it : nodes) {
+        BDD_ID tV = topVar(it);
+        if (isVariable(tV)) {
+            vars_of_root.insert(tV);
+        }
     }
 }
 
