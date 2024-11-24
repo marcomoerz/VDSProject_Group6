@@ -6,13 +6,51 @@
 #define VDSPROJECT_MANAGER_H
 
 #include "ManagerInterface.h"
+#include "config.h"
 
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <array>
+#include <functional>
+#include <tuple>
+#include <set>
 
 namespace ClassProject {
+
+#if CLASSPROJECT_USECACHE == 1
+template<typename Return, typename ... Args>
+class Cache {
+public:
+// Constructors
+    Cache(std::function<Return(Args...)> f) 
+        : f(f)
+    {}
+// Default constructors
+    Cache(const Cache &c) = default;
+    Cache(Cache &&c) = default;
+// Assignment operators
+    Cache &operator=(const Cache &c) = default;
+    Cache &operator=(Cache &&c) = default;
+// Destructor
+    ~Cache() = default;
+// Cache operator overload
+    Return operator()(Args... args) {
+        auto it = cache.find(std::make_tuple(args...));
+        if (it == cache.end()) {
+            Return result = f(args...);
+            cache.emplace(std::make_tuple(args...), result);
+            return result;
+        } else {
+            return it->second;
+        }
+    }
+private:
+    std::function<Return(Args...)> f;
+    std::map<std::tuple<Args...>, Return> cache;
+};
+#endif
 
 static const BDD_ID FalseId = 0;
 static const BDD_ID TrueId = 1;
@@ -144,6 +182,9 @@ public:
     void visualizeBDD(std::string filepath, BDD_ID &root) override;
 protected:
 // Protected methods and variables
+    BDD_ID ite_impl(BDD_ID i, BDD_ID t, BDD_ID e);
+    BDD_ID coFactorTrue_impl(BDD_ID f, BDD_ID x);
+    BDD_ID coFactorFalse_impl(BDD_ID f, BDD_ID x);
 
     /**
      * @brief Node struct
@@ -174,19 +215,25 @@ protected:
     // Node -> BDD_ID
     std::unordered_map<Node, BDD_ID, NodeHash> reverseTable;
 
+#if CLASSPROJECT_VISUALIZE == 1
     // BDD_ID -> Label
     std::unordered_map<BDD_ID, std::string> labelTable;
     // Label -> BDD_ID
     std::unordered_map<std::string, BDD_ID> reverselabelTable;
+#endif
 
-    // reverse lookup tables to improve runtime performance
-    std::unordered_map<Node, BDD_ID, NodeHash> iteTable;
-    std::unordered_map<Node, BDD_ID, NodeHash> coTrueTable;
-    std::unordered_map<Node, BDD_ID, NodeHash> coFalseTable;
-
-    // next available BDD_ID
+    // next available BDD_ID, BDD_ID
     BDD_ID nextID = 0;
+
+#if CLASSPROJECT_USECACHE
+    // Caches
+    Cache<BDD_ID, BDD_ID, BDD_ID, BDD_ID> iteCache;
+    Cache<BDD_ID, BDD_ID, BDD_ID> coTrueCache;
+    Cache<BDD_ID, BDD_ID, BDD_ID> coFalseCache;
+#endif
+
 public:
+#if CLASSPROJECT_VISUALIZE == 1
     /**
      * @brief Prints the uniqueTable to the console
      */
@@ -197,6 +244,7 @@ public:
             std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << labelTable.at(it.first) << std::endl;
         }
     }
+#endif
 };
 
 } // namespace ClassProject

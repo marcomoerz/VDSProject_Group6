@@ -34,7 +34,9 @@ int main(int argc, char* argv[])
     BDD_ID f3 = mn.and2(f1, f2);
     //BDD_ID an = mn.neg(a);
     //BDD_ID a0 = mn.or2(a, an);
+#if CLASSPROJECT_VISUALIZE == 1
     mn.printTable();
+#endif
     std::set<BDD_ID> nodes;
     mn.findNodes(f3, nodes);
     std::cout << "List of Nodes from Root:";

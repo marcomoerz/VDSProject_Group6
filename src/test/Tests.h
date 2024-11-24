@@ -38,6 +38,15 @@ public:
     auto getMap() {
         return uniqueTable;
     }
+    auto getCacheIte() {
+        return iteCache;
+    }
+    auto getCacheCoFactorTrue() {
+        return coTrueCache;
+    }
+    auto getCacheCoFactorFalse() {
+        return coFalseCache;
+    }
 };
 
 /**
@@ -353,6 +362,61 @@ TEST_F(ManagerTest, ITE_REPETITION) {
     EXPECT_NODE_EQ(map.at(2), 2, 1, 0);
     EXPECT_NODE_EQ(map.at(3), 3, 1, 0);
     EXPECT_NODE_EQ(map.at(4), 2, 3, 0);
+}
+
+TEST_F(ManagerTest, ITE_REDUCTION_HIGH_LOW) { // TODO refine this test
+    // After one recursion the ite function checks and sees high == low
+    // and returns high
+    // Table in test
+    // Label                 | ID | TOP_VAR | H_SUC | L_SUC |
+    //_______________________|____|_________|_______|_______|
+    // False                 | 0  | 0       | 0     | 0     |
+    // True                  | 1  | 1       | 1     | 1     |
+    // a                     | 2  | 2       | 1     | 0     |
+    // b                     | 3  | 3       | 1     | 0     |
+    // c                     | 4  | 4       | 1     | 0     |
+    // d                     | 5  | 5       | 1     | 0     |
+    // f1: ite(a, True, b)   | 6  | 2       | 1     | 3     | // a + b
+    // f2: ite(c, d, False)  | 7  | 4       | 5     | 0     | // c * d
+    // ...                   | 8  | 3       | 7     | 0     | // Inserted by recusion
+    // f3: ite(f1, f2, False)| 9  | 3       | 7     | 0     | // (a + b) * c * d
+
+    BDD_ID a = mgr->createVar("a");
+    BDD_ID b = mgr->createVar("b");
+    BDD_ID c = mgr->createVar("c");
+    BDD_ID d = mgr->createVar("d");
+    BDD_ID f1 = mgr->ite(a, mgr->True(), b);
+    BDD_ID f2 = mgr->ite(c, d, mgr->False());
+    BDD_ID f3 = mgr->ite(f1, f2, mgr->False());
+
+    // TODO
+    auto map = mgr->getMap();
+
+    // Test created ids
+    EXPECT_EQ(map.size(), 10);
+    EXPECT_EQ(mgr->False(), 0);
+    EXPECT_EQ(mgr->True(),  1);
+    EXPECT_EQ(a,           2);
+    EXPECT_EQ(b,           3);
+    EXPECT_EQ(c,           4);
+    EXPECT_EQ(d,           5);
+    EXPECT_EQ(f1,          6);
+    EXPECT_EQ(f2,          7);
+    EXPECT_EQ(f3,          9);
+    // TODO
+
+    // Test map
+    EXPECT_NODE_EQ(map.at(0), 0, 0, 0);
+    EXPECT_NODE_EQ(map.at(1), 1, 1, 1);
+    EXPECT_NODE_EQ(map.at(2), 2, 1, 0);
+    EXPECT_NODE_EQ(map.at(3), 3, 1, 0);
+    EXPECT_NODE_EQ(map.at(4), 4, 1, 0);
+    EXPECT_NODE_EQ(map.at(5), 5, 1, 0);
+    EXPECT_NODE_EQ(map.at(6), 2, 1, 3);
+    EXPECT_NODE_EQ(map.at(7), 4, 5, 0);
+    EXPECT_NODE_EQ(map.at(8), 3, 7, 0);
+    EXPECT_NODE_EQ(map.at(9), 2, 7, 8);
+    // TODO
 }
 
 TEST_F(ManagerTest, ITE_REDUCTION) {

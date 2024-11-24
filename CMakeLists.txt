@@ -4,6 +4,13 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC -std=c++17 ${LLVM_CXX_FLAGS} ")
 include(CTest)
 include(FetchContent)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# Options
+option(CLASSPROJECT_COVERAGE "Enable coverage reporting for class project" OFF)
+option(CLASSPROJECT_VISUALIZE "Enable visualization for class project" OFF)
 
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in ${CMAKE_SOURCE_DIR}/gtest/googletest-download/CMakeLists.txt)
@@ -20,16 +27,33 @@ if(result)
     message(FATAL_ERROR "Build step for googletest failed: ${result}")
 endif()
 
-# include graphviz
-FetchContent_Declare(
-        graphviz
-        GIT_REPOSITORY https://gitlab.com/graphviz/graphviz.git
-        GIT_TAG 12.2.0
-)
 
-set(WITH_PNG ON CACHE BOOL "Enable PNG support")
+if(CLASSPROJECT_VISUALIZE)
+    # Find the Graphviz libraries
+    find_library(GRAPHVIZ_LIBRARIE_GVC NAMES graphviz gvc)
+    find_library(GRAPHVIZ_LIBRARIE_CGRAPH NAMES graphviz cgraph)
+    # find_library(GRAPHVIZ_LIBRARIE_CDT NAMES graphviz cdt)
+    # find_library(GRAPHVIZ_LIBRARIE_CORE NAMES graphviz gvplugin_core)
+    # find_library(GRAPHVIZ_LIBRARIE_DOT_LAYOUT NAMES graphviz gvplugin_dot_layout)
+    # find_library(GRAPHVIZ_LIBRARIE_GD NAMES graphviz gvplugin_gd)
+    
+    # Concatenate the libraries
+    if (GRAPHVIZ_LIBRARIE_GVC AND GRAPHVIZ_LIBRARIE_CGRAPH) #AND GRAPHVIZ_LIBRARIE_CDT AND GRAPHVIZ_LIBRARIE_CORE AND GRAPHVIZ_LIBRARIE_DOT_LAYOUT AND GRAPHVIZ_LIBRARIE_GD)
+        set(GRAPHVIZ_LIBRARIES ${GRAPHVIZ_LIBRARIE_GVC} ${GRAPHVIZ_LIBRARIE_CGRAPH})# ${GRAPHVIZ_LIBRARIE_CDT} ${GRAPHVIZ_LIBRARIE_CORE} ${GRAPHVIZ_LIBRARIE_DOT_LAYOUT} ${GRAPHVIZ_LIBRARIE_GD})
+    else ()
+        set(GRAPHVIZ_LIBRARIES "")
+    endif ()
+    # Find the include directory
+    find_path(GRAPHVIZ_INCLUDE_DIR NAMES graphviz/gvc.h)
+    # Check if found
+    if (GRAPHVIZ_LIBRARIES AND GRAPHVIZ_INCLUDE_DIR)
+        message(STATUS "Found Graphviz libraries: ${GRAPHVIZ_LIBRARIES}")
+        message(STATUS "Graphviz include directory: ${GRAPHVIZ_INCLUDE_DIR}")
+    else ()
+        message(FATAL_ERROR "Graphviz library not found!")
+    endif ()
+endif()
 
-FetchContent_MakeAvailable(graphviz)
 
 # Add googletest directly to our build. This defines
 # the gtest and gtest_main targets.
@@ -63,3 +87,16 @@ link_directories(${CMAKE_SOURCE_DIR}/src/verify/)
 add_subdirectory(src)
 add_executable(VDSProject src/main.cpp)
 target_link_libraries(VDSProject Manager)
+
+# Coverage
+if (CLASSPROJECT_COVERAGE)
+# lcov and genhtml are required for coverage
+    find_program(LCOV_PATH lcov)
+    find_program(GENHTML_PATH genhtml)
+    add_custom_target(coverage #ALL
+        COMMAND lcov --capture --directory . --output-file lcov.info
+        COMMAND genhtml lcov.info --output-directory coverage_report
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Generating code coverage report"
+    )
+endif ()

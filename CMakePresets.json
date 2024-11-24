@@ -26,7 +26,9 @@
                 "base"
             ],
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CLASSPROJECT_COVERAGE": "OFF",
+                "CLASSPROJECT_VISUALIZE": "ON"
             }
         },
         {
@@ -36,7 +38,9 @@
                 "base"
             ],
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "CLASSPROJECT_COVERAGE": "OFF",
+                "CLASSPROJECT_VISUALIZE": "OFF"
             }
         },
         {
@@ -50,6 +54,18 @@
             }
         },
         {
+            "name": "coverage",
+            "description": "Coverage build",
+            "inherits": [
+                "base"
+            ],
+            "cacheVariables": {
+                "CLASSPROJECT_COVERAGE": "ON",
+                "CLASSPROJECT_VISUALIZE": "ON",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
             "name": "ci",
             "description": "Continuous integration build",
             "inherits": [
@@ -57,8 +73,23 @@
             ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
+                "CLASSPROJECT_COVERAGE": "ON",
+                "CLASSPROJECT_VISUALIZE": "ON",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "coverage",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "coverage",
+            "targets": [
+                "VDSProject",
+                "VDSProject_test",
+                "coverage"
+            ]
         }
     ]
 }
