@@ -34,7 +34,7 @@ public:
     Cache &operator=(const Cache &c) = default;
     Cache &operator=(Cache &&c) = default;
 // Destructor
-    ~Cache() = default;
+    ~Cache() = default; // LCOV_EXCL_LINE
 // Cache operator overload
     Return operator()(Args... args) {
         auto it = cache.find(std::make_tuple(args...));
@@ -63,7 +63,7 @@ public:
     Manager &operator=(const Manager &mgr) = default; // copy assignment
     Manager &operator=(Manager &&mgr) = default; // move assignment
 // Destructor
-    ~Manager() override = default; // destructor // TODO should be virtual in ManagerInterface.h
+    ~Manager() override = default;  // LCOV_EXCL_LINE
 // ManagerInterface
     /**
      * @brief Create a new variable with the given label. The label is used to identify the variable in the BDD.
@@ -194,10 +194,8 @@ protected:
         BDD_ID topVar;
         BDD_ID high;
         BDD_ID low;
-        Node(BDD_ID topVar, BDD_ID high, BDD_ID low) : topVar(topVar), high(high), low(low) {}
-        bool operator==(const Node &rhs) const {
-            return topVar == rhs.topVar && high == rhs.high && low == rhs.low;
-        }
+        Node(BDD_ID topVar, BDD_ID high, BDD_ID low);
+        bool operator==(const Node &rhs) const;
     };
     
     /**
@@ -240,7 +238,7 @@ public:
     void printTable() {
         std::cout << "ID || High | Low | Top-Var | Label" << std::endl;
         std::cout << "----------------------------------" << std::endl;
-        for (auto &it : uniqueTable) {
+        for (const auto &it : uniqueTable) {
             std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << labelTable.at(it.first) << std::endl;
         }
     }

@@ -315,4 +315,14 @@ void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
 #endif
 }
 
+Manager::Node::Node(BDD_ID topVar, BDD_ID high, BDD_ID low)
+    : topVar(topVar)
+    , high(high)
+    , low(low)
+{}
+
+bool Manager::Node::operator==(const Manager::Node &rhs) const {
+    return topVar == rhs.topVar && high == rhs.high && low == rhs.low;
+}
+
 } // namespace ClassProject
