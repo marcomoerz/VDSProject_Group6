@@ -12,9 +12,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 option(CLASSPROJECT_COVERAGE "Enable coverage reporting for class project" OFF)
 option(CLASSPROJECT_VISUALIZE "Enable visualization for class project" OFF)
 
+# Coverage flags
+if (CLASSPROJECT_COVERAGE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 --coverage -fprofile-arcs -ftest-coverage")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+endif ()
+
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in ${CMAKE_SOURCE_DIR}/gtest/googletest-download/CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -D "CMAKE_C_COMPILER=${CMAKE_C_COMPILER}" -D "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}" -D "CMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}" -D "CMAKE_C_FLAGS=${CMAKE_C_FLAGS}" -D "CMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}" -D "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" -D "CMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}" .
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/gtest/googletest-download )
 if(result)
