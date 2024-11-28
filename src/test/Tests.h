@@ -10,6 +10,9 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <functional>
+#include <iostream>
+#include <fstream>
 
 #include "../Manager.h"
 
@@ -47,6 +50,16 @@ public:
     auto getCacheCoFactorFalse() {
         return coFalseCache;
     }
+
+    auto ite_impl_p(BDD_ID i, BDD_ID t, BDD_ID e) {
+        return ite_impl(i, t, e);
+    }
+    auto coFactorTrue_impl_p(BDD_ID f, BDD_ID x) {
+        return coFactorTrue_impl(f, x);
+    }
+    auto coFactorFalse_impl_p(BDD_ID f, BDD_ID x) {
+        return coFactorFalse_impl(f, x);
+    }
 };
 
 /**
@@ -67,19 +80,76 @@ public:
     std::unique_ptr<ManagerImpl> mgr;
 };
 
+/**
+ * @brief Test fixture for Cache class
+ * 
+ * @details This class provides a Cache object for testing
+ */
+class CacheTest : public ::testing::Test {
+public:
+    void TearDown() override {
+        cache.reset();
+    }
+
+    void SetUp() override {
+        cache = std::make_unique<Cache<BDD_ID, BDD_ID, BDD_ID, BDD_ID>>(std::bind(&CacheTest::testFunction, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        functionCalls = 0;
+    }
+
+    std::unique_ptr<Cache<BDD_ID, BDD_ID, BDD_ID, BDD_ID>> cache;
+
+    BDD_ID testFunction(BDD_ID arg1, BDD_ID arg2, BDD_ID arg3) {
+        functionCalls++;
+        return arg1 + arg2 + arg3;
+    }
+
+    int functionCalls = 0;
+};
+
+TEST_F(CacheTest, Cache) {
+    // Test multiple arguments
+    EXPECT_EQ((*cache)(1, 0, 0), 1);
+    EXPECT_EQ(functionCalls, 1);
+    EXPECT_EQ((*cache)(0, 1, 0), 1);
+    EXPECT_EQ(functionCalls, 2);
+    EXPECT_EQ((*cache)(0, 0, 1), 1);
+    EXPECT_EQ(functionCalls, 3);
+    EXPECT_EQ((*cache)(1, 2, 3), 6);
+    EXPECT_EQ(functionCalls, 4);
+
+    // Test same arguments (cache)
+    EXPECT_EQ((*cache)(1, 0, 0), 1);
+    EXPECT_EQ(functionCalls, 4);
+    EXPECT_EQ((*cache)(0, 1, 0), 1);
+    EXPECT_EQ(functionCalls, 4);
+    EXPECT_EQ((*cache)(0, 0, 1), 1);
+    EXPECT_EQ(functionCalls, 4);
+    EXPECT_EQ((*cache)(1, 2, 3), 6);
+    EXPECT_EQ(functionCalls, 4);
+}
+
 TEST_F(ManagerTest, Node) {
     ManagerImpl::Node node{1, 2, 3};
+    ManagerImpl::Node node2(1, 2, 3);
 
     // Test Node constructor
     EXPECT_EQ(node.topVar, 1);
     EXPECT_EQ(node.high,   2);
     EXPECT_EQ(node.low,    3);
+    EXPECT_EQ(node2.topVar, 1);
+    EXPECT_EQ(node2.high,   2);
+    EXPECT_EQ(node2.low,    3);
 
     // Test Node.operator==
+    EXPECT_EQ(node.operator==(node2), true); // Explicit call
     EXPECT_NODE_EQ(node, 1, 2, 3);
     EXPECT_NODE_NE(node, 1, 2, 0);
     EXPECT_NODE_NE(node, 1, 0, 3);
     EXPECT_NODE_NE(node, 0, 2, 3);
+    EXPECT_NODE_EQ(node2, 1, 2, 3);
+    EXPECT_NODE_NE(node2, 1, 2, 0);
+    EXPECT_NODE_NE(node2, 1, 0, 3);
+    EXPECT_NODE_NE(node2, 0, 2, 3);
 }
 
 TEST_F(ManagerTest, ManagerTerminations) {
@@ -364,7 +434,7 @@ TEST_F(ManagerTest, ITE_REPETITION) {
     EXPECT_NODE_EQ(map.at(4), 2, 3, 0);
 }
 
-TEST_F(ManagerTest, ITE_REDUCTION_HIGH_LOW) { // TODO refine this test
+TEST_F(ManagerTest, ITE_REDUCTION_HIGH_LOW) {
     // After one recursion the ite function checks and sees high == low
     // and returns high
     // Table in test
@@ -373,37 +443,66 @@ TEST_F(ManagerTest, ITE_REDUCTION_HIGH_LOW) { // TODO refine this test
     // False                 | 0  | 0       | 0     | 0     |
     // True                  | 1  | 1       | 1     | 1     |
     // a                     | 2  | 2       | 1     | 0     |
-    // b                     | 3  | 3       | 1     | 0     |
-    // c                     | 4  | 4       | 1     | 0     |
-    // d                     | 5  | 5       | 1     | 0     |
-    // f1: ite(a, True, b)   | 6  | 2       | 1     | 3     | // a + b
-    // f2: ite(c, d, False)  | 7  | 4       | 5     | 0     | // c * d
-    // ...                   | 8  | 3       | 7     | 0     | // Inserted by recusion
-    // f3: ite(f1, f2, False)| 9  | 3       | 7     | 0     | // (a + b) * c * d
+
+    BDD_ID a = mgr->createVar("a");
+    // TODO create a recusive test with mgr->ite() and check if the result is correct
+    BDD_ID f1 = mgr->ite_impl_p(a, mgr->True(), mgr->True());
+
+
+    auto map = mgr->getMap();
+
+    // Test created ids
+    EXPECT_EQ(map.size(), 3);
+    EXPECT_EQ(mgr->False(), 0);
+    EXPECT_EQ(mgr->True(),  1);
+    EXPECT_EQ(a,           2);
+
+    // Test map
+    EXPECT_NODE_EQ(map.at(0), 0, 0, 0);
+    EXPECT_NODE_EQ(map.at(1), 1, 1, 1);
+    EXPECT_NODE_EQ(map.at(2), 2, 1, 0);
+}
+
+TEST_F(ManagerTest, ITE_SMALLEST_TOP_VAR) {
+    // Table in test
+    // Label                    | ID | TOP_VAR | H_SUC | L_SUC |
+    //__________________________|____|_________|_______|_______|
+    // False                    | 0  | 0       | 0     | 0     |
+    // True                     | 1  | 1       | 1     | 1     |
+    // a                        | 2  | 2       | 1     | 0     |
+    // b                        | 3  | 3       | 1     | 0     |
+    // c                        | 4  | 4       | 1     | 0     |
+    // f1: ite(a, b, c)         | 5  | 2       | 3     | 4     |
+    // f2: ite(c, a, b) nach a entwickeln
+    // f2.1: ite(b, True, c)    | 6  | 3       | 1     | 4     |
+    // f2.2: ite(c, False, True)| 7  | 4       | 0     | 1     |
+    // f2.3: ite(b, f2.2, False)| 8  | 3       | 7     | 0     |
+    // f2: ite(a, f2.1, f2.3)   | 9  | 2       | 6     | 8     |
+    // f3: ite(b, c, a) nach a entwickeln
+    // f3.1: ite(b, c, True)    | 10 | 3       | 4     | 1     |
+    // f3.2: ite(b, c, False)   | 11 | 3       | 4     | 0     |
+    // f3: ite(a, f3.1, f3.2)   | 12 | 2       | 10    | 11    |
 
     BDD_ID a = mgr->createVar("a");
     BDD_ID b = mgr->createVar("b");
     BDD_ID c = mgr->createVar("c");
-    BDD_ID d = mgr->createVar("d");
-    BDD_ID f1 = mgr->ite(a, mgr->True(), b);
-    BDD_ID f2 = mgr->ite(c, d, mgr->False());
-    BDD_ID f3 = mgr->ite(f1, f2, mgr->False());
+    // TODO create a recusive test with mgr->ite() and check if the result is correct
+    BDD_ID f1 = mgr->ite_impl_p(a, b, c);
+    BDD_ID f2 = mgr->ite_impl_p(c, a, b);
+    BDD_ID f3 = mgr->ite_impl_p(b, c, a); 
 
-    // TODO
     auto map = mgr->getMap();
 
     // Test created ids
-    EXPECT_EQ(map.size(), 10);
+    EXPECT_EQ(map.size(), 13);
     EXPECT_EQ(mgr->False(), 0);
     EXPECT_EQ(mgr->True(),  1);
     EXPECT_EQ(a,           2);
     EXPECT_EQ(b,           3);
     EXPECT_EQ(c,           4);
-    EXPECT_EQ(d,           5);
-    EXPECT_EQ(f1,          6);
-    EXPECT_EQ(f2,          7);
-    EXPECT_EQ(f3,          9);
-    // TODO
+    EXPECT_EQ(f1,          5);
+    EXPECT_EQ(f2,          9);
+    EXPECT_EQ(f3,          12);
 
     // Test map
     EXPECT_NODE_EQ(map.at(0), 0, 0, 0);
@@ -411,12 +510,42 @@ TEST_F(ManagerTest, ITE_REDUCTION_HIGH_LOW) { // TODO refine this test
     EXPECT_NODE_EQ(map.at(2), 2, 1, 0);
     EXPECT_NODE_EQ(map.at(3), 3, 1, 0);
     EXPECT_NODE_EQ(map.at(4), 4, 1, 0);
-    EXPECT_NODE_EQ(map.at(5), 5, 1, 0);
-    EXPECT_NODE_EQ(map.at(6), 2, 1, 3);
-    EXPECT_NODE_EQ(map.at(7), 4, 5, 0);
+    EXPECT_NODE_EQ(map.at(5), 2, 3, 4);
+    EXPECT_NODE_EQ(map.at(6), 3, 1, 4);
+    EXPECT_NODE_EQ(map.at(7), 4, 0, 1);
     EXPECT_NODE_EQ(map.at(8), 3, 7, 0);
-    EXPECT_NODE_EQ(map.at(9), 2, 7, 8);
-    // TODO
+    EXPECT_NODE_EQ(map.at(9), 2, 6, 8);
+    EXPECT_NODE_EQ(map.at(10), 3, 4, 1);
+    EXPECT_NODE_EQ(map.at(11), 3, 4, 0);
+    EXPECT_NODE_EQ(map.at(12), 2, 10, 11);
+}
+
+TEST_F(ManagerTest, ITE_NODE_FOUND) {
+    // Table in test
+    // Label                    | ID | TOP_VAR | H_SUC | L_SUC |
+    //__________________________|____|_________|_______|_______|
+    // False                    | 0  | 0       | 0     | 0     |
+    // True                     | 1  | 1       | 1     | 1     |
+    // a                        | 2  | 2       | 1     | 0     |
+
+    BDD_ID a = mgr->createVar("a");
+    // TODO create a recusive test with mgr->ite() and check if the result is correct
+    BDD_ID f1 = mgr->ite_impl_p(a, mgr->True(), mgr->False()); // Same Node as a
+    BDD_ID f2 = mgr->ite_impl_p(a, mgr->True(), mgr->False()); // Same Node as a
+    auto map = mgr->getMap();
+
+    // Test created ids
+    EXPECT_EQ(map.size(), 3);
+    EXPECT_EQ(mgr->False(), 0);
+    EXPECT_EQ(mgr->True(),  1);
+    EXPECT_EQ(a,           2);
+    EXPECT_EQ(a,          f1);
+    EXPECT_EQ(a,          f2);
+
+    // Test map
+    EXPECT_NODE_EQ(map.at(0), 0, 0, 0);
+    EXPECT_NODE_EQ(map.at(1), 1, 1, 1);
+    EXPECT_NODE_EQ(map.at(2), 2, 1, 0);
 }
 
 TEST_F(ManagerTest, ITE_REDUCTION) {
@@ -686,6 +815,63 @@ TEST_F(ManagerTest, uniqueTableSize) {
     // Test uniqueTableSize
     EXPECT_EQ(mgr->uniqueTableSize(), 5);
     EXPECT_EQ(mgr->uniqueTableSize(), mgr->getMap().size());
+}
+
+TEST_F(ManagerTest, printTable) {
+    // Capture cout output
+    testing::internal::CaptureStdout();
+    mgr->printTable();
+    std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_EQ(output,
+        "ID || High | Low | Top-Var | Label\n"
+        "----------------------------------\n"
+        " 0 ||   0  |  0  |    0    | False\n"
+        " 1 ||   1  |  1  |    1    | True\n"
+
+    );
+}
+
+TEST_F(ManagerTest, visualizeTest) {
+    BDD_ID a = mgr->createVar("a");
+    BDD_ID b = mgr->createVar("b");
+    BDD_ID f1 = mgr->ite(a, b, mgr->False());
+    mgr->visualizeBDD(CLASSPROJECT_TESTOUTPUT_DIR, f1);
+
+    // Test visualize .dot file
+    std::ifstream file(CLASSPROJECT_TESTOUTPUT_DIR"/BDD.dot");
+    std::string line;
+    std::string content;
+    while (std::getline(file, line)) {
+        content += line;
+        content += "\n";
+    }
+    file.close();
+
+    // Check if the file contains the correct content
+    EXPECT_EQ(content,
+        "digraph BDD {\n"
+        "\tgraph [bb=\"0,0,170.79,180\"];\n"
+        "\tnode [label=\"\\N\"];\n"
+        "\tFalse\t[height=0.5,\n"
+        "\t\tpos=\"52.293,18\",\n"
+        "\t\twidth=0.97491];\n"
+        "\tTrue\t[height=0.5,\n"
+        "\t\tpos=\"138.29,18\",\n"
+        "\t\twidth=0.9027];\n"
+        "\tb\t[height=0.5,\n"
+        "\t\tpos=\"107.29,90\",\n"
+        "\t\twidth=0.75];\n" // Correct until here
+        "\tb -> False\t[pos=\"e,64.969,35.134 95.359,73.811 88.349,64.889 79.327,53.407 71.353,43.259\",\n"
+        "\t\tstyle=dotted];\n"
+        "\tb -> True\t[pos=\"e,130.78,35.956 114.64,72.411 118.22,64.335 122.6,54.431 126.62,45.355\"];\n"
+        "\t\"a ? (b) : (False)\"\t[height=0.5,\n"
+        "\t\tpos=\"79.293,162\",\n"
+        "\t\twidth=2.2026];\n"
+        "\t\"a ? (b) : (False)\" -> False\t[pos=\"e,55.561,36.189 76.036,143.87 71.434,119.67 62.981,75.211 57.502,46.393\",\n"
+        "\t\tstyle=dotted];\n"
+        "\t\"a ? (b) : (False)\" -> b\t[pos=\"e,100.58,107.79 86.071,144.05 89.304,135.97 93.244,126.12 96.848,117.11\"];\n"
+        "}\n"
+    );
 }
 
 } // namespace ClassProject::Test
