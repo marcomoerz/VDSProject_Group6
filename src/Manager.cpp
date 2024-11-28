@@ -26,15 +26,15 @@ Manager::Manager()
     , coFalseCache(std::bind(&Manager::coFactorFalse_impl, this, std::placeholders::_1, std::placeholders::_2))
 #endif
 {
-    uniqueTable.emplace(True(), Node{TrueId, TrueId, TrueId});
-    reverseTable[Node{TrueId, TrueId, TrueId}] = TrueId;
-    uniqueTable.emplace(False(), Node{FalseId, FalseId, FalseId});
-    reverseTable[Node{FalseId, FalseId, FalseId}] = FalseId;
+    uniqueTable.emplace(True(), Node{True(), True(), True()});
+    reverseTable[Node{True(), True(), True()}] = True();
+    uniqueTable.emplace(False(), Node{False(), False(), False()});
+    reverseTable[Node{False(), False(), False()}] = False();
 #if CLASSPROJECT_VISUALIZE == 1
-    labelTable[TrueId] = "True";
-    reverselabelTable["True"] = TrueId;
-    labelTable[FalseId] = "False";
-    reverselabelTable["False"] = FalseId;
+    labelTable[True()] = "True";
+    reverselabelTable["True"] = True();
+    labelTable[False()] = "False";
+    reverselabelTable["False"] = False();
 #endif
 }
 
@@ -42,8 +42,8 @@ BDD_ID Manager::createVar(const std::string &label) {
 #if CLASSPROJECT_VISUALIZE == 1
     auto it = reverselabelTable.find(label);
     if (it == reverselabelTable.end()) {
-        uniqueTable.emplace(nextID, Node{nextID, TrueId, FalseId});
-        reverseTable[Node{nextID, TrueId, FalseId}] = nextID;
+        uniqueTable.emplace(nextID, Node{nextID, True(), False()});
+        reverseTable[Node{nextID, True(), False()}] = nextID;
         labelTable[nextID] = label; // label + " ? 1 : 0";
         reverselabelTable[label] = nextID;
         return nextID++;
@@ -52,8 +52,8 @@ BDD_ID Manager::createVar(const std::string &label) {
     }
 #else
     // TODO without visualization cache variables
-    uniqueTable.emplace(nextID, Node{nextID, TrueId, FalseId});
-    reverseTable[Node{nextID, TrueId, FalseId}] = nextID;
+    uniqueTable.emplace(nextID, Node{nextID, True(), False()});
+    reverseTable[Node{nextID, True(), False()}] = nextID;
     return nextID++;
 #endif
 }
@@ -67,7 +67,7 @@ const BDD_ID &Manager::False() {
 }
 
 bool Manager::isConstant(BDD_ID f) {
-    return f <= TrueId;
+    return f <= True();
 }
 
 bool Manager::isVariable(BDD_ID x) {
@@ -118,13 +118,13 @@ BDD_ID Manager::ite_impl(BDD_ID i, BDD_ID t, BDD_ID e) {
 
 BDD_ID Manager::ite(BDD_ID i, BDD_ID t, BDD_ID e) {
     // Terminal cases
-    if (i == TrueId) {
+    if (i == True()) {
         return t;
-    } else if (i == FalseId) {
+    } else if (i == False()) {
         return e;
     } else if (t == e) {
         return t;
-    } else if (t == TrueId && e == FalseId) {
+    } else if (t == True() && e == False()) {
         return i;
     } else {
 #if CLASSPROJECT_USECACHE == 1
@@ -157,7 +157,7 @@ BDD_ID Manager::coFactorTrue_impl(BDD_ID f, BDD_ID x) {
 }
 
 BDD_ID Manager::coFactorTrue(BDD_ID f, BDD_ID x) {
-    if (topVar(f) > x || topVar(f) <= TrueId) {
+    if (topVar(f) > x || isConstant(f)) {
         return f;
     } if (topVar(f) == x) {
         return uniqueTable.at(f).high;
@@ -192,7 +192,7 @@ BDD_ID Manager::coFactorFalse_impl(BDD_ID f, BDD_ID x) {
 }
 
 BDD_ID Manager::coFactorFalse(BDD_ID f, BDD_ID x) {
-    if (topVar(f) > x || topVar(f) <= TrueId) {
+    if (topVar(f) > x || isConstant(f)) {
         return f;
     }
     if (topVar(f) == x) {
@@ -215,11 +215,11 @@ BDD_ID Manager::coFactorFalse(BDD_ID f) {
 }
 
 BDD_ID Manager::and2(BDD_ID a, BDD_ID b) {
-    return ite(a, b, FalseId);
+    return ite(a, b, False());
 }
 
 BDD_ID Manager::or2(BDD_ID a, BDD_ID b) {
-    return ite(a, TrueId, b);
+    return ite(a, True(), b);
 }
 
 BDD_ID Manager::xor2(BDD_ID a, BDD_ID b) {
@@ -227,15 +227,15 @@ BDD_ID Manager::xor2(BDD_ID a, BDD_ID b) {
 }
 
 BDD_ID Manager::neg(BDD_ID a) {
-    return ite(a, FalseId, TrueId);
+    return ite(a, False(), True());
 }
 
 BDD_ID Manager::nand2(BDD_ID a, BDD_ID b) {
-    return ite(a, neg(b), TrueId);
+    return ite(a, neg(b), True());
 }
 
 BDD_ID Manager::nor2(BDD_ID a, BDD_ID b) {
-    return ite(a, FalseId, neg(b));
+    return ite(a, False(), neg(b));
 }
 
 BDD_ID Manager::xnor2(BDD_ID a, BDD_ID b) {
@@ -252,7 +252,7 @@ std::string Manager::getTopVarName(const BDD_ID &root) {
 
 void Manager::findNodes(const BDD_ID &root, std::set<BDD_ID> &nodes_of_root) {
     bool inserted = nodes_of_root.insert(root).second;
-    if (!inserted || root <= TrueId) {
+    if (!inserted || isConstant(root)) {
         // No insertion or constant value
         return; 
     } else {
