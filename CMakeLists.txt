@@ -34,6 +34,11 @@ if(result)
     message(FATAL_ERROR "Build step for googletest failed: ${result}")
 endif()
 
+# Optimazition flags
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # Set -march and -mtune flags
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
+endif()
 
 if(CLASSPROJECT_VISUALIZE)
     # Find the Graphviz libraries
@@ -61,6 +66,18 @@ if(CLASSPROJECT_VISUALIZE)
     endif ()
 endif()
 
+# Include prebuild Boost
+set(BOOST_INCLUDE_LIBRARIES system) # Add system library for boost/spirit
+set(Boost_USE_STATIC_LIBS OFF) 
+set(Boost_USE_MULTITHREADED ON)  
+set(Boost_USE_STATIC_RUNTIME OFF) 
+FetchContent_Declare(
+  Boost
+  URL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz
+  URL_HASH SHA256=2575e74ffc3ef1cd0babac2c1ee8bdb5782a0ee672b1912da40e5b4b591ca01f
+)
+FetchContent_MakeAvailable(Boost)
+
 
 # Add googletest directly to our build. This defines
 # the gtest and gtest_main targets.
@@ -85,9 +102,11 @@ link_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/src/test/)
 link_directories(${CMAKE_SOURCE_DIR}/src/test/)
 
+add_subdirectory(src/bench)
 include_directories(${CMAKE_SOURCE_DIR}/src/bench/)
 link_directories(${CMAKE_SOURCE_DIR}/src/bench/)
 
+add_subdirectory(src/verify)
 include_directories(${CMAKE_SOURCE_DIR}/src/verify/)
 link_directories(${CMAKE_SOURCE_DIR}/src/verify/)
 
