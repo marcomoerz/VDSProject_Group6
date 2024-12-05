@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "config.h"
 #include "../Manager.h"
 
 #define EXPECT_NODE_EQ(node1, topvar, hsuc, lsuc) EXPECT_EQ((node1), ::ClassProject::Test::ManagerImpl::Node((topvar), (hsuc), (lsuc)))
@@ -41,6 +42,7 @@ public:
     auto getMap() {
         return uniqueTable;
     }
+#if CLASSPROJECT_USECACHE == 1
     auto getCacheIte() {
         return iteCache;
     }
@@ -50,6 +52,7 @@ public:
     auto getCacheCoFactorFalse() {
         return coFalseCache;
     }
+#endif
 
     auto ite_impl_p(BDD_ID i, BDD_ID t, BDD_ID e) {
         return ite_impl(i, t, e);
@@ -80,6 +83,7 @@ public:
     std::unique_ptr<ManagerImpl> mgr;
 };
 
+#if CLASSPROJECT_USECACHE == 1
 /**
  * @brief Test fixture for Cache class
  * 
@@ -127,6 +131,7 @@ TEST_F(CacheTest, Cache) {
     EXPECT_EQ((*cache)(1, 2, 3), 6);
     EXPECT_EQ(functionCalls, 4);
 }
+#endif
 
 TEST_F(ManagerTest, Node) {
     ManagerImpl::Node node{1, 2, 3};
@@ -817,6 +822,7 @@ TEST_F(ManagerTest, uniqueTableSize) {
     EXPECT_EQ(mgr->uniqueTableSize(), mgr->getMap().size());
 }
 
+#if CLASSPROJECT_VISUALIZE == 1
 TEST_F(ManagerTest, printTable) {
     // Capture cout output
     testing::internal::CaptureStdout();
@@ -873,6 +879,7 @@ TEST_F(ManagerTest, visualizeTest) {
         "}\n"
     );
 }
+#endif
 
 } // namespace ClassProject::Test
 
