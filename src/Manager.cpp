@@ -30,16 +30,13 @@ Manager::Manager()
     reverseTable.emplace(Node{True(), True(), True()}, True());
     uniqueTable.emplace(False(), Node{False(), False(), False()});
     reverseTable.emplace(Node{False(), False(), False()}, False());
-#if CLASSPROJECT_VISUALIZE == 1
     labelTable.emplace(True(), "True");
     reverselabelTable.emplace("True", True());
     labelTable.emplace(False(), "False");
     reverselabelTable.emplace("False", False());
-#endif
 }
 
 BDD_ID Manager::createVar(const std::string &label) {
-#if CLASSPROJECT_VISUALIZE == 1
     auto it = reverselabelTable.find(label);
     if (it == reverselabelTable.end()) {
         uniqueTable.emplace(nextID, Node{nextID, True(), False()});
@@ -50,12 +47,6 @@ BDD_ID Manager::createVar(const std::string &label) {
     } else {
         return it->second;
     }
-#else
-    // TODO without visualization cache variables
-    uniqueTable.emplace(nextID, Node{nextID, True(), False()});
-    reverseTable.emplace(Node{nextID, True(), False()}, nextID);
-    return nextID++;
-#endif
 }
 
 const BDD_ID &Manager::True() {
@@ -243,11 +234,7 @@ BDD_ID Manager::xnor2(BDD_ID a, BDD_ID b) {
 }
 
 std::string Manager::getTopVarName(const BDD_ID &root) {
-#if CLASSPROJECT_VISUALIZE == 1
     return labelTable.at(topVar(root));
-#else
-    return std::to_string(topVar(root));
-#endif
 }
 
 void Manager::findNodes(const BDD_ID &root, std::set<BDD_ID> &nodes_of_root) {

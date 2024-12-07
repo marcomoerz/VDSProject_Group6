@@ -220,12 +220,10 @@ protected:
     // Node -> BDD_ID
     std::unordered_map<Node, BDD_ID, NodeHash> reverseTable;
 
-#if CLASSPROJECT_VISUALIZE == 1
     // BDD_ID -> Label
     std::unordered_map<BDD_ID, std::string> labelTable;
     // Label -> BDD_ID
     std::unordered_map<std::string, BDD_ID> reverselabelTable;
-#endif
 
     // next available BDD_ID, BDD_ID
     BDD_ID nextID = 0;
