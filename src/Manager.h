@@ -16,6 +16,7 @@
 #include <functional>
 #include <tuple>
 #include <set>
+#include <boost/functional/hash.hpp>
 
 namespace ClassProject {
 
@@ -204,7 +205,13 @@ protected:
      */
     struct NodeHash {
         std::size_t operator()(const Node &node) const {
-            return std::hash<BDD_ID>()(node.topVar) ^ std::hash<BDD_ID>()(node.high) ^ std::hash<BDD_ID>()(node.low);
+            //std::size_t seed = 0;
+            //boost::hash_combine(seed, node.topVar);
+            //boost::hash_combine(seed, node.high);
+            //boost::hash_combine(seed, node.low);
+            //return seed;
+
+            return ((5381 * 33 + std::hash<BDD_ID>()(node.topVar)) * 33 + std::hash<BDD_ID>()(node.high)) * 33 + std::hash<BDD_ID>()(node.low);
         }
     };
 

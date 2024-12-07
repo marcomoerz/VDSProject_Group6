@@ -27,14 +27,14 @@ Manager::Manager()
 #endif
 {
     uniqueTable.emplace(True(), Node{True(), True(), True()});
-    reverseTable[Node{True(), True(), True()}] = True();
+    reverseTable.emplace(Node{True(), True(), True()}, True());
     uniqueTable.emplace(False(), Node{False(), False(), False()});
-    reverseTable[Node{False(), False(), False()}] = False();
+    reverseTable.emplace(Node{False(), False(), False()}, False());
 #if CLASSPROJECT_VISUALIZE == 1
-    labelTable[True()] = "True";
-    reverselabelTable["True"] = True();
-    labelTable[False()] = "False";
-    reverselabelTable["False"] = False();
+    labelTable.emplace(True(), "True");
+    reverselabelTable.emplace("True", True());
+    labelTable.emplace(False(), "False");
+    reverselabelTable.emplace("False", False());
 #endif
 }
 
@@ -43,9 +43,9 @@ BDD_ID Manager::createVar(const std::string &label) {
     auto it = reverselabelTable.find(label);
     if (it == reverselabelTable.end()) {
         uniqueTable.emplace(nextID, Node{nextID, True(), False()});
-        reverseTable[Node{nextID, True(), False()}] = nextID;
-        labelTable[nextID] = label; // label + " ? 1 : 0";
-        reverselabelTable[label] = nextID;
+        reverseTable.emplace(Node{nextID, True(), False()}, nextID);
+        labelTable.emplace(nextID, label); // label + " ? 1 : 0";
+        reverselabelTable.emplace(label, nextID);
         return nextID++;
     } else {
         return it->second;
@@ -53,7 +53,7 @@ BDD_ID Manager::createVar(const std::string &label) {
 #else
     // TODO without visualization cache variables
     uniqueTable.emplace(nextID, Node{nextID, True(), False()});
-    reverseTable[Node{nextID, True(), False()}] = nextID;
+    reverseTable.emplace(Node{nextID, True(), False()}, nextID);
     return nextID++;
 #endif
 }
@@ -102,12 +102,12 @@ BDD_ID Manager::ite_impl(BDD_ID i, BDD_ID t, BDD_ID e) {
     if (it == reverseTable.end()) {
         // add node
         uniqueTable.emplace(nextID, Node{top, high, low});
-        reverseTable[Node{top, high, low}] = nextID;
+        reverseTable.emplace(Node{top, high, low}, nextID);
 #if CLASSPROJECT_VISUALIZE == 1
         // add label
         auto label = labelTable.at(top) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
-        labelTable[nextID] = label;
-        reverselabelTable[label] = nextID;
+        labelTable.emplace(nextID, label);
+        reverselabelTable.emplace(label, nextID);
 #endif
         return nextID++;
     } else {
@@ -144,11 +144,11 @@ BDD_ID Manager::coFactorTrue_impl(BDD_ID f, BDD_ID x) {
     auto it = reverseTable.find(Node{topVar(f), high, low});
     if (it == reverseTable.end()) {
         uniqueTable.emplace(nextID, Node{topVar(f), high, low});
-        reverseTable[Node{topVar(f), high, low}] = nextID;
+        reverseTable.emplace(Node{topVar(f), high, low}, nextID);
 #if CLASSPROJECT_VISUALIZE == 1
         auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
-        labelTable[nextID] = label;
-        reverselabelTable[label] = nextID;
+        labelTable.emplace(nextID, label);
+        reverselabelTable.emplace(label, nextID);
 #endif
         return nextID++;
     } else {
@@ -179,11 +179,11 @@ BDD_ID Manager::coFactorFalse_impl(BDD_ID f, BDD_ID x) {
     auto it = reverseTable.find({topVar(f), high, low});
     if (it == reverseTable.end()) {
         uniqueTable.emplace(nextID, Node{topVar(f), high, low});
-        reverseTable[Node{topVar(f), high, low}] = nextID;
+        reverseTable.emplace(Node{topVar(f), high, low}, nextID);
 #if CLASSPROJECT_VISUALIZE == 1
         auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
-        labelTable[nextID] = label;
-        reverselabelTable[label] = nextID;
+        labelTable.emplace(nextID, label);
+        reverselabelTable.emplace(label, nextID);
 #endif
         return nextID++;
     } else {

@@ -7,7 +7,7 @@ add_library(Benchmark
 )
 # Add Boost include directories
 target_include_directories(Benchmark PRIVATE ../../lib/tqdm)
-target_include_directories(Benchmark PUBLIC ${Boost_SOURCE_DIR})
+target_include_directories(Benchmark PUBLIC ${boost_SOURCE_DIR})
 
 #Executable
 add_executable(VDSProject_bench main_bench.cpp)

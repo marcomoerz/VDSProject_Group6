@@ -28,7 +28,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CLASSPROJECT_COVERAGE": "OFF",
-                "CLASSPROJECT_VISUALIZE": "ON"
+                "CLASSPROJECT_VISUALIZE": "OFF"
             }
         },
         {

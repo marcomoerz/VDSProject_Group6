@@ -72,11 +72,11 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
 FetchContent_Declare(
-  Boost
+  boost
   URL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz
   URL_HASH SHA256=2575e74ffc3ef1cd0babac2c1ee8bdb5782a0ee672b1912da40e5b4b591ca01f
 )
-FetchContent_MakeAvailable(Boost)
+FetchContent_MakeAvailable(boost)
 
 
 # Add googletest directly to our build. This defines
