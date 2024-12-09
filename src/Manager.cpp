@@ -94,7 +94,7 @@ BDD_ID Manager::ite_impl(BDD_ID i, BDD_ID t, BDD_ID e) {
         // add node
         uniqueTable.emplace(nextID, Node{top, high, low});
         reverseTable.emplace(Node{top, high, low}, nextID);
-#if CLASSPROJECT_VISUALIZE == 1
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
         // add label
         auto label = labelTable.at(top) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
         labelTable.emplace(nextID, label);
@@ -136,7 +136,7 @@ BDD_ID Manager::coFactorTrue_impl(BDD_ID f, BDD_ID x) {
     if (it == reverseTable.end()) {
         uniqueTable.emplace(nextID, Node{topVar(f), high, low});
         reverseTable.emplace(Node{topVar(f), high, low}, nextID);
-#if CLASSPROJECT_VISUALIZE == 1
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
         auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
         labelTable.emplace(nextID, label);
         reverselabelTable.emplace(label, nextID);
@@ -171,7 +171,7 @@ BDD_ID Manager::coFactorFalse_impl(BDD_ID f, BDD_ID x) {
     if (it == reverseTable.end()) {
         uniqueTable.emplace(nextID, Node{topVar(f), high, low});
         reverseTable.emplace(Node{topVar(f), high, low}, nextID);
-#if CLASSPROJECT_VISUALIZE == 1
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
         auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
         labelTable.emplace(nextID, label);
         reverselabelTable.emplace(label, nextID);
@@ -266,45 +266,112 @@ size_t Manager::uniqueTableSize() {
 
 void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
 #if CLASSPROJECT_VISUALIZE == 1
-#if CLASSPROJECT_GRAPHVIZ == 1
     char name[] = "BDD";
-    Agraph_t *g = agopen(name, Agdirected, 0);
-    std::set<BDD_ID> nodeSet;
-    findNodes(root, nodeSet);
-    std::unordered_map<BDD_ID, Agnode_t*> nodeMap;
-    for (auto &i : nodeSet) {
-        Agnode_t *n = agnode(g, labelTable.at(i).data(), 1);
-        nodeMap.emplace(i, n);
-    }
-    for (auto &i : nodeSet) {
-        if (i <= 1) {
-            // Skip terminal nodes
-            continue;
+    #if CLASSPROJECT_GRAPHVIZ == 1
+        Agraph_t *g = agopen(name, Agdirected, 0);
+        std::set<BDD_ID> nodeSet;
+        findNodes(root, nodeSet);
+        std::unordered_map<BDD_ID, Agnode_t*> nodeMap;
+        for (const auto &i : nodeSet) {
+            #if CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+                Agnode_t *n = agnode(g, labelTable.at(i).data(), 1);
+            #else
+                Agnode_t *n = agnode(g, getTopVarName(topVar(i)).data(), 1);
+            #endif
+            nodeMap.emplace(i, n);
         }
-        BDD_ID high = uniqueTable.at(i).high;
-        BDD_ID low = uniqueTable.at(i).low;
-        Agedge_t *h = agedge(g, nodeMap.at(i), nodeMap.at(high), 0, 1);
-        Agedge_t *l = agedge(g, nodeMap.at(i), nodeMap.at(low), 0, 1);
-        char stylename[] = "style";
-        char stylevalue[] = "dotted";
-        char styledef[] = "";
-        agsafeset(l, stylename, stylevalue, styledef);
-    }
+        for (auto &i : nodeSet) {
+            if (isConstant(i)) {
+                // Skip terminal nodes
+                continue;
+            }
+            BDD_ID high = uniqueTable.at(i).high;
+            BDD_ID low = uniqueTable.at(i).low;
+            Agedge_t *h = agedge(g, nodeMap.at(i), nodeMap.at(high), 0, 1);
+            Agedge_t *l = agedge(g, nodeMap.at(i), nodeMap.at(low), 0, 1);
+            char stylename[] = "style";
+            char stylevalue[] = "dotted";
+            char styledef[] = "";
+            agsafeset(l, stylename, stylevalue, styledef);
+        }
 
-    gvLayout(gvc, g, "dot");
-    std::string png = filepath + "/BDD.png";
-    std::string dot = filepath + "/BDD.dot";
-    gvRenderFilename(gvc, g, "png", png.c_str());
-    gvRenderFilename(gvc, g, "dot", dot.c_str());
-    gvFreeLayout(gvc, g);
-    agclose(g);
+        gvLayout(gvc, g, "dot");
+        std::string png = filepath + "/BDD.png";
+        std::string dot = filepath + "/BDD.dot";
+        gvRenderFilename(gvc, g, "png", png.c_str());
+        gvRenderFilename(gvc, g, "dot", dot.c_str());
+        gvFreeLayout(gvc, g);
+        agclose(g);
+    #else
+        // Get all nodes
+        std::set<BDD_ID> nodes;
+        findNodes(root, nodes);
+
+        // Open file
+        std::ofstream file(filepath + name + ".dot");
+        if (!file.is_open()) {
+            std::cerr << "Error opening file" << std::endl;
+            return;
+        }
+
+        // Start the DOT graph
+        file << "digraph BDD {\n";
+        file << "    rankdir=TB;\n";
+        
+        // Define terminal nodes
+        file << "    node [shape=box];\n";
+        file << "    " << True() << " [label=\""<< True() <<"\"];\n";
+        file << "    " << False() <<" [label=\""<< False() <<"\"];\n";
+
+        // Define decision nodes
+        file << "    node [shape=circle];\n";
+        for (const auto& node : nodes) {
+            #if CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+                file << "    " << node << " [label=\"" << labelTable.at(node) << "\"]\n";
+            #else
+                file << "    " << node << " [label=\"" << getTopVarName(topVar(node)) << "\"]\n";
+            #endif
+        }
+
+        // Add edges
+        for (const auto& node : nodes) {
+            if(isConstant(node)) {
+                continue;
+            }
+            // file << "    " << node << " -> " << coFactorTrue(node) << " [label=\"1\"];\n";
+            file << "    " << node << " -> " << coFactorTrue(node) << ";\n";
+            // file << "    " << node << " -> " << coFactorFalse(node) << " [label=\"0\" style=\"dashed\"];\n"; 
+            file << "    " << node << " -> " << coFactorFalse(node) << " [style=\"dashed\"];\n"; 
+        }
+
+        // Close the graph
+        file << "}\n";
+        file.close();
+
+        // Check if file was written
+        if(file.fail()) {
+            std::cerr << "Error writing to file" << std::endl;
+            return;
+        }
+    #endif
 #else
-    std::cerr << "Graphviz is disabled. Currently not implemented" << std::endl;
-#endif
-#else
-    std::cerr << "Visualization is disabled. Please enable it by setting the CLASSPROJECT_VISUALIZE to 1" << std::endl;
+    std::cerr << "Visualization is disabled. Please enable it by setting the cmake option CLASSPROJECT_VISUALIZE to 1" << std::endl;
 #endif
 }
+
+#if CLASSPROJECT_VISUALIZE == 1
+    void Manager::printTable() {
+        std::cout << "ID || High | Low | Top-Var | Label" << std::endl;
+        std::cout << "----------------------------------" << std::endl;
+        for (const auto &it : uniqueTable) {
+            #if CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+                std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << labelTable.at(it.first) << std::endl;
+            #else
+                std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << getTopVarName(topVar(it.first)) << std::endl;
+            #endif
+        }
+    }
+#endif
 
 Manager::Node::Node(BDD_ID topVar, BDD_ID high, BDD_ID low)
     : topVar(topVar)

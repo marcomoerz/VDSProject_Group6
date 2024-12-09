@@ -234,19 +234,14 @@ protected:
     Cache<BDD_ID, BDD_ID, BDD_ID> coFalseCache;
 #endif
 
-public:
 #if CLASSPROJECT_VISUALIZE == 1
-    /**
-     * @brief Prints the uniqueTable to the console
-     */
-    void printTable() {
-        std::cout << "ID || High | Low | Top-Var | Label" << std::endl;
-        std::cout << "----------------------------------" << std::endl;
-        for (const auto &it : uniqueTable) {
-            std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << labelTable.at(it.first) << std::endl;
-        }
-    }
+public:
+/**
+ * @brief Prints the uniqueTable to the console
+ */
+void printTable();
 #endif
+
 };
 
 } // namespace ClassProject
