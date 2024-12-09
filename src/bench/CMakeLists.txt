@@ -6,7 +6,7 @@ add_library(Benchmark
         skip_parser.hpp
 )
 # Add Boost include directories
-target_include_directories(Benchmark PRIVATE ../../lib/tqdm)
+target_include_directories(Benchmark PRIVATE ${CMAKE_SOURCE_DIR}/lib/tqdm)
 target_include_directories(Benchmark PUBLIC ${boost_SOURCE_DIR})
 
 #Executable

@@ -7,14 +7,14 @@
 #include <array>
 #include <string>
 
-#if CLASSPROJECT_VISUALIZE == 1
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_GRAPHVIZ == 1
 #include <graphviz/gvc.h>
 #include <graphviz/cgraph.h>
 #endif
 
 namespace ClassProject {
 
-#if CLASSPROJECT_VISUALIZE == 1
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_GRAPHVIZ == 1
 static GVC_t *gvc = gvContext();
 #endif
 
@@ -266,6 +266,7 @@ size_t Manager::uniqueTableSize() {
 
 void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
 #if CLASSPROJECT_VISUALIZE == 1
+#if CLASSPROJECT_GRAPHVIZ == 1
     char name[] = "BDD";
     Agraph_t *g = agopen(name, Agdirected, 0);
     std::set<BDD_ID> nodeSet;
@@ -297,6 +298,9 @@ void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
     gvRenderFilename(gvc, g, "dot", dot.c_str());
     gvFreeLayout(gvc, g);
     agclose(g);
+#else
+    std::cerr << "Graphviz is disabled. Currently not implemented" << std::endl;
+#endif
 #else
     std::cerr << "Visualization is disabled. Please enable it by setting the CLASSPROJECT_VISUALIZE to 1" << std::endl;
 #endif
