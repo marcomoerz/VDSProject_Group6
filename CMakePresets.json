@@ -53,7 +53,7 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CLASSPROJECT_COVERAGE": "OFF",
-                "CLASSPROJECT_VISUALIZE": "OFF",
+                "CLASSPROJECT_VISUALIZE": "ON",
                 "CLASSPROJECT_GRAPHVIZ": "OFF",
                 "CLASSPROJECT_TESTS": "OFF",
                 "CLASSPROJECT_BENCHMARKS": "ON"
@@ -78,6 +78,7 @@
             "cacheVariables": {
                 "CLASSPROJECT_COVERAGE": "ON",
                 "CLASSPROJECT_VISUALIZE": "ON",
+                "CLASSPROJECT_GRAPHVIZ": "OFF",
                 "CLASSPROJECT_TESTS": "ON",
                 "CMAKE_BUILD_TYPE": "Debug"
             }
