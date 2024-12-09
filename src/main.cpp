@@ -12,7 +12,7 @@ using namespace ClassProject;
 int main(int argc, char* argv[])
 {
     // Default output folder is the current directory
-    std::string output_folder = ".";
+    std::string output_folder = "./";
     if (argc == 2) {
         // If the user provides an output folder, use it
         output_folder = argv[1];
