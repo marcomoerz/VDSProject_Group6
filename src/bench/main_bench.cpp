@@ -28,7 +28,8 @@ int main(int argc, char *argv[]) {
 
     double user_time, vm1, rss1, vm2, rss2;
 
-    std::cout << "- Generating BDD from circuit...";
+    std::cout << "- Generating BDD from circuit..." << std::flush;
+    // std::cout << "- Generating BDD from circuit..." << std::endl;
     process_mem_usage(vm1, rss1);
     user_time = userTime();
     circuit2BDD->GenerateBDD(parsed_circuit.GetSortedCircuit(), bench_file);

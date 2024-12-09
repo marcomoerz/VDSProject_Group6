@@ -5,7 +5,7 @@
 
 #include "CircuitToBDD.hpp"
 
-#include "tqdm/tqdm.h"
+// #include "tqdm/tqdm.h"
 
 #include <utility>
 
@@ -39,11 +39,15 @@ void CircuitToBDD::GenerateBDD(const list_of_circuit_t &circuit, const std::stri
     bdd_out_file << "BDD_ID,Bench Label" << std::endl;
 
     // Output left nodes with tqdm
-    auto listiter = circuit.cbegin();
-    for(int i : tqdm::range(circuit.size())) {
-        auto circuit_node = *listiter;
-        listiter++;
-    // for (const auto &circuit_node : circuit) {
+    // auto listiter = circuit.cbegin();
+    // size_t start = 0;
+    // size_t end = circuit.size();
+    // auto tqdmiter = tq::trange(start, end);
+    // tqdmiter.set_prefix("Generating BDD from circuit... ");
+    // for(int i : tqdmiter) {
+        // auto circuit_node = *listiter;
+        // listiter++;
+    for (const auto &circuit_node : circuit) {
         if (circuit_node.gate_type == INPUT_GATE_T) {
             BDD_node = InputGate(circuit_node.label);
         } else if (circuit_node.gate_type == NOT_GATE_T) {
@@ -69,6 +73,7 @@ void CircuitToBDD::GenerateBDD(const list_of_circuit_t &circuit, const std::stri
             bdd_out_file << BDD_node << "," << circuit_node.label << std::endl;
         }
     }
+    // std::cout << "\n" << std::endl;
 
     bdd_out_file.close();
 }
