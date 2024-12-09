@@ -16,7 +16,6 @@
 #include <functional>
 #include <tuple>
 #include <set>
-#include <boost/functional/hash.hpp>
 
 namespace ClassProject {
 
