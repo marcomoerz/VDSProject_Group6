@@ -153,10 +153,15 @@ if (CLASSPROJECT_COVERAGE)
 # lcov and genhtml are required for coverage
     find_program(LCOV_PATH lcov)
     find_program(GENHTML_PATH genhtml)
-    add_custom_target(coverage #ALL
-        COMMAND lcov --capture --directory . --output-file lcov.info
-        COMMAND genhtml lcov.info --output-directory coverage_report
+
+    add_custom_target(coverage ALL
+        DEPENDS VDSProject_test  # Ensure the test target is built before running tests
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target VDSProject_test --parallel
+        COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VDSProject_test  # Run the tests
+        COMMAND lcov --capture --directory . --output-file lcov.info  # Capture coverage data
+        COMMAND genhtml lcov.info --output-directory coverage_report  # Generate the HTML coverage report
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Generating code coverage report"
     )
+
 endif ()
