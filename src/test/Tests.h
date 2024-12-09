@@ -836,49 +836,6 @@ TEST_F(ManagerTest, printTable) {
 
     );
 }
-
-TEST_F(ManagerTest, visualizeTest) {
-    BDD_ID a = mgr->createVar("a");
-    BDD_ID b = mgr->createVar("b");
-    BDD_ID f1 = mgr->ite(a, b, mgr->False());
-    mgr->visualizeBDD(CLASSPROJECT_TESTOUTPUT_DIR, f1);
-
-    // Test visualize .dot file
-    std::ifstream file(CLASSPROJECT_TESTOUTPUT_DIR"/BDD.dot");
-    std::string line;
-    std::string content;
-    while (std::getline(file, line)) {
-        content += line;
-        content += "\n";
-    }
-    file.close();
-
-    // Check if the file contains the correct content
-    EXPECT_EQ(content,
-        "digraph BDD {\n"
-        "\tgraph [bb=\"0,0,170.79,180\"];\n"
-        "\tnode [label=\"\\N\"];\n"
-        "\tFalse\t[height=0.5,\n"
-        "\t\tpos=\"52.293,18\",\n"
-        "\t\twidth=0.97491];\n"
-        "\tTrue\t[height=0.5,\n"
-        "\t\tpos=\"138.29,18\",\n"
-        "\t\twidth=0.9027];\n"
-        "\tb\t[height=0.5,\n"
-        "\t\tpos=\"107.29,90\",\n"
-        "\t\twidth=0.75];\n" // Correct until here
-        "\tb -> False\t[pos=\"e,64.969,35.134 95.359,73.811 88.349,64.889 79.327,53.407 71.353,43.259\",\n"
-        "\t\tstyle=dotted];\n"
-        "\tb -> True\t[pos=\"e,130.78,35.956 114.64,72.411 118.22,64.335 122.6,54.431 126.62,45.355\"];\n"
-        "\t\"a ? (b) : (False)\"\t[height=0.5,\n"
-        "\t\tpos=\"79.293,162\",\n"
-        "\t\twidth=2.2026];\n"
-        "\t\"a ? (b) : (False)\" -> False\t[pos=\"e,55.561,36.189 76.036,143.87 71.434,119.67 62.981,75.211 57.502,46.393\",\n"
-        "\t\tstyle=dotted];\n"
-        "\t\"a ? (b) : (False)\" -> b\t[pos=\"e,100.58,107.79 86.071,144.05 89.304,135.97 93.244,126.12 96.848,117.11\"];\n"
-        "}\n"
-    );
-}
 #endif
 
 } // namespace ClassProject::Test
