@@ -6,13 +6,51 @@
 #define VDSPROJECT_MANAGER_H
 
 #include "ManagerInterface.h"
+#include "config.h"
 
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <array>
+#include <functional>
+#include <tuple>
+#include <set>
 
 namespace ClassProject {
+
+#if CLASSPROJECT_USECACHE == 1
+template<typename Return, typename ... Args>
+class Cache {
+public:
+// Constructors
+    Cache(std::function<Return(Args...)> f) 
+        : f(f)
+    {}
+// Default constructors
+    Cache(const Cache &c) = default;
+    Cache(Cache &&c) = default;
+// Assignment operators
+    Cache &operator=(const Cache &c) = default;
+    Cache &operator=(Cache &&c) = default;
+// Destructor
+    ~Cache() = default; // LCOV_EXCL_LINE
+// Cache operator overload
+    Return operator()(Args... args) {
+        auto it = cache.find(std::make_tuple(args...));
+        if (it == cache.end()) {
+            Return result = f(args...);
+            cache.emplace(std::make_tuple(args...), result);
+            return result;
+        } else {
+            return it->second;
+        }
+    }
+private:
+    std::function<Return(Args...)> f;
+    std::map<std::tuple<Args...>, Return> cache;
+};
+#endif
 
 static const BDD_ID FalseId = 0;
 static const BDD_ID TrueId = 1;
@@ -25,7 +63,7 @@ public:
     Manager &operator=(const Manager &mgr) = default; // copy assignment
     Manager &operator=(Manager &&mgr) = default; // move assignment
 // Destructor
-    ~Manager() override = default; // destructor // TODO should be virtual in ManagerInterface.h
+    ~Manager() override = default;  // LCOV_EXCL_LINE
 // ManagerInterface
     /**
      * @brief Create a new variable with the given label. The label is used to identify the variable in the BDD.
@@ -144,6 +182,9 @@ public:
     void visualizeBDD(std::string filepath, BDD_ID &root) override;
 protected:
 // Protected methods and variables
+    BDD_ID ite_impl(BDD_ID i, BDD_ID t, BDD_ID e);
+    BDD_ID coFactorTrue_impl(BDD_ID f, BDD_ID x);
+    BDD_ID coFactorFalse_impl(BDD_ID f, BDD_ID x);
 
     /**
      * @brief Node struct
@@ -153,10 +194,8 @@ protected:
         BDD_ID topVar;
         BDD_ID high;
         BDD_ID low;
-        Node(BDD_ID topVar, BDD_ID high, BDD_ID low) : topVar(topVar), high(high), low(low) {}
-        bool operator==(const Node &rhs) const {
-            return topVar == rhs.topVar && high == rhs.high && low == rhs.low;
-        }
+        Node(BDD_ID topVar, BDD_ID high, BDD_ID low);
+        bool operator==(const Node &rhs) const;
     };
     
     /**
@@ -165,7 +204,13 @@ protected:
      */
     struct NodeHash {
         std::size_t operator()(const Node &node) const {
-            return std::hash<BDD_ID>()(node.topVar) ^ std::hash<BDD_ID>()(node.high) ^ std::hash<BDD_ID>()(node.low);
+            //std::size_t seed = 0;
+            //boost::hash_combine(seed, node.topVar);
+            //boost::hash_combine(seed, node.high);
+            //boost::hash_combine(seed, node.low);
+            //return seed;
+
+            return ((5381 * 33 + std::hash<BDD_ID>()(node.topVar)) * 33 + std::hash<BDD_ID>()(node.high)) * 33 + std::hash<BDD_ID>()(node.low);
         }
     };
 
@@ -179,24 +224,24 @@ protected:
     // Label -> BDD_ID
     std::unordered_map<std::string, BDD_ID> reverselabelTable;
 
-    // reverse lookup tables to improve runtime performance
-    std::unordered_map<Node, BDD_ID, NodeHash> iteTable;
-    std::unordered_map<Node, BDD_ID, NodeHash> coTrueTable;
-    std::unordered_map<Node, BDD_ID, NodeHash> coFalseTable;
-
-    // next available BDD_ID
+    // next available BDD_ID, BDD_ID
     BDD_ID nextID = 0;
+
+#if CLASSPROJECT_USECACHE
+    // Caches
+    Cache<BDD_ID, BDD_ID, BDD_ID, BDD_ID> iteCache;
+    Cache<BDD_ID, BDD_ID, BDD_ID> coTrueCache;
+    Cache<BDD_ID, BDD_ID, BDD_ID> coFalseCache;
+#endif
+
+#if CLASSPROJECT_VISUALIZE == 1
 public:
-    /**
-     * @brief Prints the uniqueTable to the console
-     */
-    void printTable() {
-        std::cout << "ID || High | Low | Top-Var | Label" << std::endl;
-        std::cout << "----------------------------------" << std::endl;
-        for (auto &it : uniqueTable) {
-            std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << labelTable.at(it.first) << std::endl;
-        }
-    }
+/**
+ * @brief Prints the uniqueTable to the console
+ */
+void printTable();
+#endif
+
 };
 
 } // namespace ClassProject

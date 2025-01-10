@@ -1,42 +1,48 @@
 #include "Manager.h"
 
 #include <iostream>
+#include <set>
 #include <fstream>
 #include <unordered_map>
 #include <array>
 #include <string>
-#include <gvc.h>
 
-extern gvplugin_library_t gvplugin_dot_layout_LTX_library;
-extern gvplugin_library_t gvplugin_core_LTX_library;
-extern gvplugin_library_t gvplugin_gd_LTX_library;
-
-GVC_t *gvc = gvContext();
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_GRAPHVIZ == 1
+#include <graphviz/gvc.h>
+#include <graphviz/cgraph.h>
+#endif
 
 namespace ClassProject {
 
-Manager::Manager() {
-    uniqueTable.emplace(False(), Node{FalseId, FalseId, FalseId});
-    uniqueTable.emplace(True(), Node{TrueId, TrueId, TrueId});
-    labelTable[TrueId] = "True";
-    reverselabelTable["True"] = TrueId;
-    labelTable[FalseId] = "False";
-    reverselabelTable["False"] = FalseId;
-    reverseTable[Node{TrueId, TrueId, TrueId}] = TrueId;
-    reverseTable[Node{FalseId, FalseId, FalseId}] = FalseId;
-    nextID = 2;
-    gvAddLibrary(gvc, &gvplugin_dot_layout_LTX_library);
-    gvAddLibrary(gvc, &gvplugin_core_LTX_library);
-    gvAddLibrary(gvc, &gvplugin_gd_LTX_library);
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_GRAPHVIZ == 1
+static GVC_t *gvc = gvContext();
+#endif
+
+Manager::Manager()
+    : nextID(2)
+#if CLASSPROJECT_USECACHE == 1
+    , iteCache(std::bind(&Manager::ite_impl, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3))
+    , coTrueCache(std::bind(&Manager::coFactorTrue_impl, this, std::placeholders::_1, std::placeholders::_2))
+    , coFalseCache(std::bind(&Manager::coFactorFalse_impl, this, std::placeholders::_1, std::placeholders::_2))
+#endif
+{
+    uniqueTable.emplace(True(), Node{True(), True(), True()});
+    reverseTable.emplace(Node{True(), True(), True()}, True());
+    uniqueTable.emplace(False(), Node{False(), False(), False()});
+    reverseTable.emplace(Node{False(), False(), False()}, False());
+    labelTable.emplace(True(), "True");
+    reverselabelTable.emplace("True", True());
+    labelTable.emplace(False(), "False");
+    reverselabelTable.emplace("False", False());
 }
 
 BDD_ID Manager::createVar(const std::string &label) {
     auto it = reverselabelTable.find(label);
     if (it == reverselabelTable.end()) {
-        uniqueTable.emplace(nextID, Node{nextID, TrueId, FalseId});
-        reverseTable[Node{nextID, TrueId, FalseId}] = nextID;
-        labelTable[nextID] = label; // label + " ? 1 : 0";
-        reverselabelTable[label] = nextID;
+        uniqueTable.emplace(nextID, Node{nextID, True(), False()});
+        reverseTable.emplace(Node{nextID, True(), False()}, nextID);
+        labelTable.emplace(nextID, label); // label + " ? 1 : 0";
+        reverselabelTable.emplace(label, nextID);
         return nextID++;
     } else {
         return it->second;
@@ -52,7 +58,7 @@ const BDD_ID &Manager::False() {
 }
 
 bool Manager::isConstant(BDD_ID f) {
-    return f <= 1;
+    return f <= True();
 }
 
 bool Manager::isVariable(BDD_ID x) {
@@ -63,108 +69,131 @@ BDD_ID Manager::topVar(BDD_ID f) {
     return uniqueTable.at(f).topVar;
 }
 
+BDD_ID Manager::ite_impl(BDD_ID i, BDD_ID t, BDD_ID e) {
+    // Find the top variable with the lowest index
+    BDD_ID top = topVar(i);
+    if (topVar(t) < top && isVariable(topVar(t))){
+        top = topVar(t);
+    } 
+    if (topVar(e) < top && isVariable(topVar(e))) {
+        top = topVar(e);
+    }
+
+    // Calculate the high and low successors with a recursive call
+    BDD_ID high = ite(coFactorTrue(i, top), coFactorTrue(t, top), coFactorTrue(e, top));
+    BDD_ID low = ite(coFactorFalse(i, top), coFactorFalse(t, top), coFactorFalse(e, top));
+    
+    // If the high and low successors are the same. The initial ite call is reduced to the high successor
+    if (high == low) {
+        return high;
+    }
+
+    // Check if the node already exists
+    auto it = reverseTable.find(Node{top, high, low});
+    if (it == reverseTable.end()) {
+        // add node
+        uniqueTable.emplace(nextID, Node{top, high, low});
+        reverseTable.emplace(Node{top, high, low}, nextID);
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+        // add label
+        auto label = labelTable.at(top) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
+        labelTable.emplace(nextID, label);
+        reverselabelTable.emplace(label, nextID);
+#endif
+        return nextID++;
+    } else {
+        // node found
+        return it->second;
+    }
+}
+
 BDD_ID Manager::ite(BDD_ID i, BDD_ID t, BDD_ID e) {
     // Terminal cases
-    if (i == TrueId) return t;
-    else if (i == FalseId) return e;
-    else if (t == e) return t;
-    else if (t == TrueId && e == FalseId) return i;
-    else {
-        // Check if the node already exists
-        auto iteIt = iteTable.find(Node{i, t, e});
-        if (iteIt != iteTable.end()) {
-            return iteIt->second;
-        }
+    if (i == True()) {
+        return t;
+    } else if (i == False()) {
+        return e;
+    } else if (t == e) {
+        return t;
+    } else if (t == True() && e == False()) {
+        return i;
+    } else {
+#if CLASSPROJECT_USECACHE == 1
+        return iteCache(i, t, e);
+#else
+        return ite_impl(i, t, e);
+#endif
+    }
+}
 
-        // Find the top variable with the lowest index
-        BDD_ID top = topVar(i);
-        if (topVar(t) < top && isVariable(topVar(t))) top = topVar(t);
-        if (topVar(e) < top && isVariable(topVar(e))) top = topVar(e);
-
-        // Calculate the high and low successors with a recursive call
-        BDD_ID high = ite(coFactorTrue(i, top), coFactorTrue(t, top), coFactorTrue(e, top));
-        BDD_ID low = ite(coFactorFalse(i, top), coFactorFalse(t, top), coFactorFalse(e, top));
-        
-        // If the high and low successors are the same. The initial ite call is reduced to the high successor
-        if (high == low) {
-            iteTable.emplace(Node{i, t, e}, high);
-            return high;
-        }
-
-        // Check if the node already exists
-        auto it = reverseTable.find({top, high, low});
-        if (it == reverseTable.end()) {
-            uniqueTable.emplace(nextID, Node{top, high, low});
-            reverseTable[Node{top, high, low}] = nextID;
-            auto label = labelTable.at(top) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
-            labelTable[nextID] = label;
-            reverselabelTable[label] = nextID;
-            iteTable.emplace(Node{i, t, e}, nextID);
-            return nextID++;
-        } else {
-            iteTable.emplace(Node{i, t, e}, it->second);
-            return it->second;
-        }
+BDD_ID Manager::coFactorTrue_impl(BDD_ID f, BDD_ID x) {
+    BDD_ID high = coFactorTrue(uniqueTable.at(f).high, x);
+    BDD_ID low = coFactorTrue(uniqueTable.at(f).low, x);
+    if (high == low) {
+        return high;
+    }
+    auto it = reverseTable.find(Node{topVar(f), high, low});
+    if (it == reverseTable.end()) {
+        uniqueTable.emplace(nextID, Node{topVar(f), high, low});
+        reverseTable.emplace(Node{topVar(f), high, low}, nextID);
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+        auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
+        labelTable.emplace(nextID, label);
+        reverselabelTable.emplace(label, nextID);
+#endif
+        return nextID++;
+    } else {
+        return it->second;
     }
 }
 
 BDD_ID Manager::coFactorTrue(BDD_ID f, BDD_ID x) {
-    if (topVar(f) > x || topVar(f) <= 1) return f;
-    if (topVar(f) == x) return uniqueTable.at(f).high;
-    else {
-        auto coTrueIt = coTrueTable.find(Node{f, x, 0});
-        if (coTrueIt != coTrueTable.end()) {
-            return coTrueIt->second;
-        }
-        BDD_ID high = coFactorTrue(uniqueTable.at(f).high, x);
-        BDD_ID low = coFactorTrue(uniqueTable.at(f).low, x);
-        if (high == low) {
-            coTrueTable.emplace(Node{f, x, 0}, high);
-            return high;
-        }
-        auto it = reverseTable.find(Node{topVar(f), high, low});
-        if (it == reverseTable.end()) {
-            uniqueTable.emplace(nextID, Node{topVar(f), high, low});
-            auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
-            labelTable[nextID] = label;
-            reverseTable[Node{f, high, low}] = nextID;
-            reverseTable[Node{topVar(f), high, low}] = nextID;
-            coTrueTable.emplace(Node{f, x, 0}, nextID);
-            return nextID++;
-        } else {
-            coTrueTable.emplace(Node{f, x, 0}, it->second);
-            return it->second;
-        }
+    if (topVar(f) > x || isConstant(f)) {
+        return f;
+    } if (topVar(f) == x) {
+        return uniqueTable.at(f).high;
+    } else {
+#if CLASSPROJECT_USECACHE == 1
+        return coTrueCache(f, x);
+#else
+        return coFactorTrue_impl(f, x);
+#endif
+    }
+}
+
+BDD_ID Manager::coFactorFalse_impl(BDD_ID f, BDD_ID x) {
+    BDD_ID high = coFactorFalse(uniqueTable.at(f).high, x);
+    BDD_ID low = coFactorFalse(uniqueTable.at(f).low, x);
+    if (high == low) {
+        return high;
+    }
+    auto it = reverseTable.find({topVar(f), high, low});
+    if (it == reverseTable.end()) {
+        uniqueTable.emplace(nextID, Node{topVar(f), high, low});
+        reverseTable.emplace(Node{topVar(f), high, low}, nextID);
+#if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+        auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
+        labelTable.emplace(nextID, label);
+        reverselabelTable.emplace(label, nextID);
+#endif
+        return nextID++;
+    } else {
+        return it->second;
     }
 }
 
 BDD_ID Manager::coFactorFalse(BDD_ID f, BDD_ID x) {
-    if (topVar(f) > x || topVar(f) <= 1) return f;
-    if (topVar(f) == x) return uniqueTable.at(f).low;
-    else {
-        auto coFalseIt = coFalseTable.find(Node{f, x, 0});
-        if (coFalseIt != coFalseTable.end()) {
-            return coFalseIt->second;
-        }
-        BDD_ID high = coFactorFalse(uniqueTable.at(f).high, x);
-        BDD_ID low = coFactorFalse(uniqueTable.at(f).low, x);
-        if (high == low) {
-            coFalseTable.emplace(Node{f, x, 0}, high);
-            return high;
-        }
-        auto it = reverseTable.find({topVar(f), high, low});
-        if (it == reverseTable.end()) {
-            uniqueTable.emplace(nextID, Node{topVar(f), high, low});
-            auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
-            labelTable[nextID] = label;
-            reverselabelTable[label] = nextID;
-            reverseTable[Node{f, high, low}] = nextID;
-            coFalseTable.emplace(Node{f, x, 0}, nextID);
-            return nextID++;
-        } else {
-            coFalseTable.emplace(Node{f, x, 0}, it->second);
-            return it->second;
-        }
+    if (topVar(f) > x || isConstant(f)) {
+        return f;
+    }
+    if (topVar(f) == x) {
+        return uniqueTable.at(f).low;
+    } else {
+#if CLASSPROJECT_USECACHE == 1
+        return coFalseCache(f, x);
+#else
+        return coFactorFalse_impl(f, x);
+#endif
     }
 }
 
@@ -177,11 +206,11 @@ BDD_ID Manager::coFactorFalse(BDD_ID f) {
 }
 
 BDD_ID Manager::and2(BDD_ID a, BDD_ID b) {
-    return ite(a, b, FalseId);
+    return ite(a, b, False());
 }
 
 BDD_ID Manager::or2(BDD_ID a, BDD_ID b) {
-    return ite(a, TrueId, b);
+    return ite(a, True(), b);
 }
 
 BDD_ID Manager::xor2(BDD_ID a, BDD_ID b) {
@@ -189,15 +218,15 @@ BDD_ID Manager::xor2(BDD_ID a, BDD_ID b) {
 }
 
 BDD_ID Manager::neg(BDD_ID a) {
-    return ite(a, FalseId, TrueId);
+    return ite(a, False(), True());
 }
 
 BDD_ID Manager::nand2(BDD_ID a, BDD_ID b) {
-    return ite(a, neg(b), TrueId);
+    return ite(a, neg(b), True());
 }
 
 BDD_ID Manager::nor2(BDD_ID a, BDD_ID b) {
-    return ite(a, FalseId, neg(b));
+    return ite(a, False(), neg(b));
 }
 
 BDD_ID Manager::xnor2(BDD_ID a, BDD_ID b) {
@@ -209,9 +238,11 @@ std::string Manager::getTopVarName(const BDD_ID &root) {
 }
 
 void Manager::findNodes(const BDD_ID &root, std::set<BDD_ID> &nodes_of_root) {
-    nodes_of_root.insert(root);
-    if (root <= 1) return;
-    else {
+    bool inserted = nodes_of_root.insert(root).second;
+    if (!inserted || isConstant(root)) {
+        // No insertion or constant value
+        return; 
+    } else {
         findNodes(uniqueTable.at(root).high, nodes_of_root);
         findNodes(uniqueTable.at(root).low, nodes_of_root);
         return;
@@ -219,12 +250,13 @@ void Manager::findNodes(const BDD_ID &root, std::set<BDD_ID> &nodes_of_root) {
 }
 
 void Manager::findVars(const BDD_ID &root, std::set<BDD_ID> &vars_of_root) {
-    if (root <= 1) return;
-    else {
-        vars_of_root.insert(topVar(root));
-        findVars(uniqueTable.at(root).high, vars_of_root);
-        findVars(uniqueTable.at(root).low, vars_of_root);
-        return;
+    std::set<BDD_ID> nodes;
+    findNodes(root, nodes);
+    for (auto it : nodes) {
+        BDD_ID tV = topVar(it);
+        if (isVariable(tV)) {
+            vars_of_root.insert(tV);
+        }
     }
 }
 
@@ -233,34 +265,122 @@ size_t Manager::uniqueTableSize() {
 }
 
 void Manager::visualizeBDD(std::string filepath, BDD_ID &root) {
+#if CLASSPROJECT_VISUALIZE == 1
     char name[] = "BDD";
-    Agraph_t *g = agopen(name, Agdirected, 0);
-    std::set<BDD_ID> nodeSet;
-    findNodes(root, nodeSet);
-    std::unordered_map<BDD_ID, Agnode_t*> nodeMap;
-    for (auto &i : nodeSet) {
-        Agnode_t *n = agnode(g, labelTable.at(i).data(), 1);
-        nodeMap.emplace(i, n);
-    }
-    for (auto &i : nodeSet) {
-        if (i <= 1) continue;
-        BDD_ID high = uniqueTable.at(i).high;
-        BDD_ID low = uniqueTable.at(i).low;
-        Agedge_t *h = agedge(g, nodeMap.at(i), nodeMap.at(high), 0, 1);
-        Agedge_t *l = agedge(g, nodeMap.at(i), nodeMap.at(low), 0, 1);
-        char stylename[] = "style";
-        char stylevalue[] = "dotted";
-        char styledef[] = "";
-        agsafeset(l, stylename, stylevalue, styledef);
-    }
+    #if CLASSPROJECT_GRAPHVIZ == 1
+        Agraph_t *g = agopen(name, Agdirected, 0);
+        std::set<BDD_ID> nodeSet;
+        findNodes(root, nodeSet);
+        std::unordered_map<BDD_ID, Agnode_t*> nodeMap;
+        for (const auto &i : nodeSet) {
+            #if CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+                Agnode_t *n = agnode(g, labelTable.at(i).data(), 1);
+            #else
+                Agnode_t *n = agnode(g, getTopVarName(topVar(i)).data(), 1);
+            #endif
+            nodeMap.emplace(i, n);
+        }
+        for (auto &i : nodeSet) {
+            if (isConstant(i)) {
+                // Skip terminal nodes
+                continue;
+            }
+            BDD_ID high = uniqueTable.at(i).high;
+            BDD_ID low = uniqueTable.at(i).low;
+            Agedge_t *h = agedge(g, nodeMap.at(i), nodeMap.at(high), 0, 1);
+            Agedge_t *l = agedge(g, nodeMap.at(i), nodeMap.at(low), 0, 1);
+            char stylename[] = "style";
+            char stylevalue[] = "dotted";
+            char styledef[] = "";
+            agsafeset(l, stylename, stylevalue, styledef);
+        }
 
-    gvLayout(gvc, g, "dot");
-    std::string png = filepath + "/BDD.png";
-    std::string dot = filepath + "/BDD.dot";
-    gvRenderFilename(gvc, g, "png", png.c_str());
-    gvRenderFilename(gvc, g, "dot", dot.c_str());
-    gvFreeLayout(gvc, g);
-    agclose(g);
+        gvLayout(gvc, g, "dot");
+        std::string png = filepath + "/BDD.png";
+        std::string dot = filepath + "/BDD.dot";
+        gvRenderFilename(gvc, g, "png", png.c_str());
+        gvRenderFilename(gvc, g, "dot", dot.c_str());
+        gvFreeLayout(gvc, g);
+        agclose(g);
+    #else
+        // Get all nodes
+        std::set<BDD_ID> nodes;
+        findNodes(root, nodes);
+
+        // Open file
+        std::ofstream file(filepath + name + ".dot");
+        if (!file.is_open()) {
+            std::cerr << "Error opening file" << std::endl;
+            return;
+        }
+
+        // Start the DOT graph
+        file << "digraph BDD {\n";
+        file << "    rankdir=TB;\n";
+        
+        // Define terminal nodes
+        file << "    node [shape=box];\n";
+        file << "    " << True() << " [label=\""<< True() <<"\"];\n";
+        file << "    " << False() <<" [label=\""<< False() <<"\"];\n";
+
+        // Define decision nodes
+        file << "    node [shape=circle];\n";
+        for (const auto& node : nodes) {
+            #if CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+                file << "    " << node << " [label=\"" << labelTable.at(node) << "\"]\n";
+            #else
+                file << "    " << node << " [label=\"" << getTopVarName(topVar(node)) << "\"]\n";
+            #endif
+        }
+
+        // Add edges
+        for (const auto& node : nodes) {
+            if(isConstant(node)) {
+                continue;
+            }
+            // file << "    " << node << " -> " << coFactorTrue(node) << " [label=\"1\"];\n";
+            file << "    " << node << " -> " << coFactorTrue(node) << ";\n";
+            // file << "    " << node << " -> " << coFactorFalse(node) << " [label=\"0\" style=\"dashed\"];\n"; 
+            file << "    " << node << " -> " << coFactorFalse(node) << " [style=\"dashed\"];\n"; 
+        }
+
+        // Close the graph
+        file << "}\n";
+        file.close();
+
+        // Check if file was written
+        if(file.fail()) {
+            std::cerr << "Error writing to file" << std::endl;
+            return;
+        }
+    #endif
+#else
+    std::cerr << "Visualization is disabled. Please enable it by setting the cmake option CLASSPROJECT_VISUALIZE to 1" << std::endl;
+#endif
+}
+
+#if CLASSPROJECT_VISUALIZE == 1
+    void Manager::printTable() {
+        std::cout << "ID || High | Low | Top-Var | Label" << std::endl;
+        std::cout << "----------------------------------" << std::endl;
+        for (const auto &it : uniqueTable) {
+            #if CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
+                std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << labelTable.at(it.first) << std::endl;
+            #else
+                std::cout << " " << it.first << " ||   " << it.second.high << "  |  " << it.second.low << "  |    " << it.second.topVar << "    | " << getTopVarName(topVar(it.first)) << std::endl;
+            #endif
+        }
+    }
+#endif
+
+Manager::Node::Node(BDD_ID topVar, BDD_ID high, BDD_ID low)
+    : topVar(topVar)
+    , high(high)
+    , low(low)
+{}
+
+bool Manager::Node::operator==(const Manager::Node &rhs) const {
+    return topVar == rhs.topVar && high == rhs.high && low == rhs.low;
 }
 
 } // namespace ClassProject
