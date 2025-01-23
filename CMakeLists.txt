@@ -1,10 +1,17 @@
 cmake_minimum_required(VERSION 3.10)
+
+# Main project
 project(VDSProject CXX C)
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC -std=c++17 ${LLVM_CXX_FLAGS} ")
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# includes
 include(CTest)
 include(FetchContent)
 
+# variables
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC -std=c++17 ${LLVM_CXX_FLAGS} ")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Cmake output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -17,7 +24,13 @@ option(CLASSPROJECT_COVERAGE "Enable coverage reporting for class project" OFF)
 option(CLASSPROJECT_VISUALIZE "Enable visualization for class project" OFF)
 option(CLASSPROJECT_GRAPHVIZ "Enable Graphviz for class project visualization" OFF)
 option(CLASSPROJECT_BENCHMARKS "Build classproject benchmarks" OFF)
+option(CLASSPROJECT_REACHABILITY "Build classproject reachability executable" OFF)
 option(CLASSPROJECT_TESTS "Build classproject tests" OFF)
+
+# includes depending on the options
+if(CLASSPROJECT_TESTS OR CLASSPROJECT_REACHABILITY)
+    include(GoogleTest)
+endif()
 
 ##################################
 #         Coverage flags         #
@@ -39,7 +52,9 @@ endif()
 ##################################
 #              GTest             #
 ##################################
-if(CLASSPROJECT_TESTS)
+
+# Fetch and build GTest
+if(CLASSPROJECT_TESTS OR CLASSPROJECT_REACHABILITY)
     configure_file(CMakeLists.txt.in ${CMAKE_SOURCE_DIR}/gtest/googletest-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -D "CMAKE_C_COMPILER=${CMAKE_C_COMPILER}" -D "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}" -D "CMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}" -D "CMAKE_C_FLAGS=${CMAKE_C_FLAGS}" -D "CMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}" -D "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" -D "CMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}" .
             RESULT_VARIABLE result
@@ -59,6 +74,8 @@ endif()
 ##################################
 #   Classproject Visualization   #
 ##################################
+
+# Find Graphviz
 if(CLASSPROJECT_VISUALIZE)
     if(CLASSPROJECT_GRAPHVIZ)
         # Find the Graphviz libraries
@@ -90,6 +107,8 @@ endif()
 ###################################
 #   Classproject Benchmark deps   #
 ###################################
+
+# Fetch Boost
 if(CLASSPROJECT_BENCHMARKS)
     # Include prebuild Boost
     set(BOOST_INCLUDE_LIBRARIES system) # Add system library for boost/spirit
@@ -100,11 +119,13 @@ if(CLASSPROJECT_BENCHMARKS)
     boost
     URL https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz
     URL_HASH SHA256=2575e74ffc3ef1cd0babac2c1ee8bdb5782a0ee672b1912da40e5b4b591ca01f
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(boost)
 endif()
 
-if(CLASSPROJECT_TESTS)
+# Add gtest
+if(CLASSPROJECT_TESTS OR CLASSPROJECT_REACHABILITY)
     # Add googletest directly to our build. This defines
     # the gtest and gtest_main targets.
     add_subdirectory(${CMAKE_SOURCE_DIR}/gtest/googletest-src
@@ -119,18 +140,26 @@ if(CLASSPROJECT_TESTS)
     endif()
 endif()
 
-#Include dirs
+
+###################################
+#    Classproject include dirs    #
+###################################
+
+# libs (tqdm)
 include_directories(${CMAKE_SOURCE_DIR}/lib)
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
+# main project src
 include_directories(${CMAKE_SOURCE_DIR}/src)
 link_directories(${CMAKE_SOURCE_DIR}/src)
 
+# CLASSPROJECT_TESTS
 if(CLASSPROJECT_TESTS)
     include_directories(${CMAKE_SOURCE_DIR}/src/test/)
     link_directories(${CMAKE_SOURCE_DIR}/src/test/)
 endif()
 
+# CLASSPROJECT_BENCHMARKS
 if(CLASSPROJECT_BENCHMARKS)
     add_subdirectory(src/bench)
     include_directories(${CMAKE_SOURCE_DIR}/src/bench/)
@@ -141,27 +170,51 @@ if(CLASSPROJECT_BENCHMARKS)
     link_directories(${CMAKE_SOURCE_DIR}/src/verify/)
 endif()
 
+# CLASSPROJECT_REACHABILITY
+if (CLASSPROJECT_REACHABILITY)
+    add_subdirectory(src/reachability)
+endif()
+
+
 ####################################
-# Classproject main library target #
+#   Classproject main executable   #
 ####################################
 add_subdirectory(src)
 add_executable(VDSProject src/main.cpp)
 target_link_libraries(VDSProject Manager)
 
+
+####################################
+#       Classproject coverage      #
+####################################
 # Custom coverage target for commands
 if (CLASSPROJECT_COVERAGE)
 # lcov and genhtml are required for coverage
     find_program(LCOV_PATH lcov)
     find_program(GENHTML_PATH genhtml)
 
-    add_custom_target(coverage ALL
-        DEPENDS VDSProject_test  # Ensure the test target is built before running tests
-        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target VDSProject_test --parallel
-        COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VDSProject_test  # Run the tests
-        COMMAND lcov --capture --directory . --output-file lcov.info  # Capture coverage data
-        COMMAND genhtml lcov.info --output-directory coverage_report  # Generate the HTML coverage report
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMENT "Generating code coverage report"
-    )
+    if (CLASSPROJECT_REACHABILITY)
+        add_custom_target(coverage ALL
+            DEPENDS VDSProject_test  # Ensure the test target is built before running tests
+            COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target VDSProject_test --parallel
+            COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target VDSProject_reachability --parallel
+            COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VDSProject_test  # Run the tests
+            COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VDSProject_reachability  # Run the tests
+            COMMAND lcov --capture --directory . --output-file lcov.info  # Capture coverage data
+            COMMAND genhtml lcov.info --output-directory coverage_report  # Generate the HTML coverage report
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report"
+        )
+    else()
+        add_custom_target(coverage ALL
+            DEPENDS VDSProject_test  # Ensure the test target is built before running tests
+            COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target VDSProject_test --parallel
+            COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VDSProject_test  # Run the tests
+            COMMAND lcov --capture --directory . --output-file lcov.info  # Capture coverage data
+            COMMAND genhtml lcov.info --output-directory coverage_report  # Generate the HTML coverage report
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report"
+        )
+    endif()
 
 endif ()

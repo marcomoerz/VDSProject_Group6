@@ -8,5 +8,4 @@ target_link_libraries(VDSProject_test Manager)
 target_link_libraries(VDSProject_test gtest gtest_main pthread)
 target_compile_definitions(VDSProject_test PUBLIC CLASSPROJECT_TESTOUTPUT_DIR="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-include(GoogleTest)
 gtest_discover_tests(${PROJECT_NAME})
