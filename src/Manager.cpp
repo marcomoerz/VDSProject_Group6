@@ -137,7 +137,7 @@ BDD_ID Manager::coFactorTrue_impl(BDD_ID f, BDD_ID x) {
         uniqueTable.emplace(nextID, Node{topVar(f), high, low});
         reverseTable.emplace(Node{topVar(f), high, low}, nextID);
 #if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
-        auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
+        auto label = labelTable.at(topVar(f)) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
         labelTable.emplace(nextID, label);
         reverselabelTable.emplace(label, nextID);
 #endif
@@ -172,7 +172,7 @@ BDD_ID Manager::coFactorFalse_impl(BDD_ID f, BDD_ID x) {
         uniqueTable.emplace(nextID, Node{topVar(f), high, low});
         reverseTable.emplace(Node{topVar(f), high, low}, nextID);
 #if CLASSPROJECT_VISUALIZE == 1 && CLASSPROJECT_VISUALIZE_FUNCTIONS == 1
-        auto label = labelTable.at(topVar(f)).substr(0, 1) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
+        auto label = labelTable.at(topVar(f)) + " ? (" + labelTable.at(high) + ") : (" + labelTable.at(low) + ")";
         labelTable.emplace(nextID, label);
         reverselabelTable.emplace(label, nextID);
 #endif
