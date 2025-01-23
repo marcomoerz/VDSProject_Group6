@@ -16,7 +16,7 @@
                 "deprecated": true,
                 "systemVars": true,
                 "unusedCli": true,
-                "uninitialized": true
+                "uninitialized": false
             }
         },
         {
@@ -29,9 +29,26 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CLASSPROJECT_COVERAGE": "OFF",
                 "CLASSPROJECT_VISUALIZE": "ON",
+                "CLASSPROJECT_GRAPHVIZ": "OFF",
+                "CLASSPROJECT_TESTS": "ON",
+                "CLASSPROJECT_BENCHMARKS": "ON",
+                "CLASSPROJECT_REACHABILITY": "ON"
+            }
+        },
+        {
+            "name": "debug_with_graphviz",
+            "description": "Debug build with external graphviz library",
+            "inherits": [
+                "base"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CLASSPROJECT_COVERAGE": "OFF",
+                "CLASSPROJECT_VISUALIZE": "ON",
                 "CLASSPROJECT_GRAPHVIZ": "ON",
                 "CLASSPROJECT_TESTS": "ON",
-                "CLASSPROJECT_BENCHMARKS": "OFF"
+                "CLASSPROJECT_BENCHMARKS": "ON",
+                "CLASSPROJECT_REACHABILITY": "ON"
             }
         },
         {
@@ -41,7 +58,8 @@
                 "base"
             ],
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "CLASSPROJECT_REACHABILITY": "ON"
             }
         },
         {
@@ -56,7 +74,8 @@
                 "CLASSPROJECT_VISUALIZE": "ON",
                 "CLASSPROJECT_GRAPHVIZ": "OFF",
                 "CLASSPROJECT_TESTS": "OFF",
-                "CLASSPROJECT_BENCHMARKS": "ON"
+                "CLASSPROJECT_BENCHMARKS": "ON",
+                "CLASSPROJECT_REACHABILITY": "OFF"
             }
         },
         {
@@ -66,7 +85,8 @@
                 "base"
             ],
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CLASSPROJECT_REACHABILITY": "ON"
             }
         },
         {
@@ -76,11 +96,12 @@
                 "base"
             ],
             "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
                 "CLASSPROJECT_COVERAGE": "ON",
                 "CLASSPROJECT_VISUALIZE": "ON",
                 "CLASSPROJECT_GRAPHVIZ": "OFF",
                 "CLASSPROJECT_TESTS": "ON",
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CLASSPROJECT_REACHABILITY": "ON"
             }
         },
         {
@@ -91,11 +112,12 @@
             ],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CLASSPROJECT_COVERAGE": "OFF",
                 "CLASSPROJECT_VISUALIZE": "ON",
                 "CLASSPROJECT_GRAPHVIZ": "OFF",
                 "CLASSPROJECT_TESTS": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CLASSPROJECT_REACHABILITY": "ON"
             }
         }
     ],
