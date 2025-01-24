@@ -1,8 +1,29 @@
 #include "Reachability.h"
-#include <format>
 #include <unordered_map>
 
 namespace ClassProject {
+
+    Reachability::Reachability(unsigned int stateSize, unsigned int inputSize)
+    : ReachabilityInterface(stateSize, inputSize) {
+        if (stateSize == 0) {
+            throw std::runtime_error("stateSize must be greater than 0");
+        }
+        statebits.resize(stateSize);
+        statebitsF.resize(stateSize);
+        inputbits.resize(inputSize);
+        initialState.resize(stateSize);
+        transitionFunctions.resize(stateSize);
+        for (int i = 0; i < stateSize; i++) {
+            BDD_ID id = Manager::createVar("s_" + std::to_string(i));
+            statebits[i] = id;
+            statebitsF[i] = Manager::createVar("s_" + std::to_string(i) + "'");
+            initialState[i] = Manager::False();
+            transitionFunctions[i] = id;
+        }
+        for (int i = 0; i < inputSize; i++) {
+            inputbits[i] = Manager::createVar("i_" + std::to_string(i));
+        }
+    }
 
     const std::vector<BDD_ID> &Reachability::getStates() const {
         return statebits;
@@ -22,17 +43,17 @@ namespace ClassProject {
         BDD_ID temp = computedReach;
         for (int i = statebits.size() - 1; i >= 0; i--) {
             if (stateVector[i]) {
-                temp = coFactorTrue(temp, statebits[i]);
+                temp = Manager::coFactorTrue(temp, statebits[i]);
             } else {
-                temp = coFactorFalse(temp, statebits[i]);
+                temp = Manager::coFactorFalse(temp, statebits[i]);
             }
         }
         //for (int i = inputbits.size() - 1; i >= 0; i--) {
         //    temp = or2(coFactorTrue(temp, inputbits[i]), coFactorFalse(temp, inputbits[i]));
         //}
-        if (temp == True()) {
+        if (temp == Manager::True()) {
             return true;
-        } else if (temp == False()) {
+        } else if (temp == Manager::False()) {
             return false;
         } else {
             throw std::runtime_error("Error in isReachable");
@@ -50,15 +71,15 @@ namespace ClassProject {
             BDD_ID temp = computedReachSteps[n];
             for (int i = statebits.size() - 1; i >= 0; i--) {
                 if (stateVector[i]) {
-                    temp = coFactorTrue(temp, statebits[i]);
+                    temp = Manager::coFactorTrue(temp, statebits[i]);
                 } else {
-                    temp = coFactorFalse(temp, statebits[i]);
+                    temp = Manager::coFactorFalse(temp, statebits[i]);
                 }
             }
             //for (int i = inputbits.size() - 1; i >= 0; i--) {
             //    temp = or2(coFactorTrue(temp, inputbits[i]), coFactorFalse(temp, inputbits[i]));
             //}
-            if (temp == True()) {
+            if (temp == Manager::True()) {
                 return n;
             }
         }
@@ -76,9 +97,9 @@ namespace ClassProject {
             }
         }
         Reachability::transitionFunctions = transitionFunctions;
-        transitionRelation = True();
+        transitionRelation = Manager::True();
         for (int i = 0; i < statebits.size(); i++) {
-            transitionRelation = and2(transitionRelation, or2(and2(statebitsF[i], transitionFunctions[i]), and2(neg(statebitsF[i]), neg(transitionFunctions[i]))));
+            transitionRelation = Manager::and2(transitionRelation, Manager::or2(Manager::and2(statebitsF[i], transitionFunctions[i]), Manager::and2(Manager::neg(statebitsF[i]), Manager::neg(transitionFunctions[i]))));
         }
         computed = false;
     }
@@ -89,9 +110,9 @@ namespace ClassProject {
         }
         for (int i = 0; i < statebits.size(); i++) {
             if (stateVector[i]) {
-                initialState[i] = True();
+                initialState[i] = Manager::True();
             } else {
-                initialState[i] = False();
+                initialState[i] = Manager::False();
             }
         }
         computed = false;
@@ -99,30 +120,30 @@ namespace ClassProject {
 
     void Reachability::compute() {
         computedReachSteps.clear();
-        BDD_ID c_S = True();
-        BDD_ID c_SS = True();
+        BDD_ID c_S = Manager::True();
+        BDD_ID c_SS = Manager::True();
         for (int i = 0; i < statebits.size(); i++) {
-            c_S = and2(c_S, xnor2(statebits[i], initialState[i]));
-            c_SS = and2(c_SS, xnor2(statebits[i], statebitsF[i]));
+            c_S = Manager::and2(c_S, Manager::xnor2(statebits[i], initialState[i]));
+            c_SS = Manager::and2(c_SS, Manager::xnor2(statebits[i], statebitsF[i]));
         }
         BDD_ID c_R_it = c_S;
         BDD_ID c_R, temp;
         computedReachSteps.push_back(c_S);
         do {
             c_R = c_R_it;
-            temp = and2(c_R, transitionRelation);
+            temp = Manager::and2(c_R, transitionRelation);
             for (int i = inputbits.size() - 1; i >= 0; i--) {
-                temp = or2(coFactorTrue(temp, inputbits[i]), coFactorFalse(temp, inputbits[i]));
+                temp = Manager::or2(Manager::coFactorTrue(temp, inputbits[i]), Manager::coFactorFalse(temp, inputbits[i]));
             }
             for (int i = statebits.size() - 1; i >= 0; i--) {
-                temp = or2(coFactorTrue(temp, statebits[i]), coFactorFalse(temp, statebits[i]));
+                temp = Manager::or2(Manager::coFactorTrue(temp, statebits[i]), Manager::coFactorFalse(temp, statebits[i]));
             }
-            temp = and2(c_SS, temp);
+            temp = Manager::and2(c_SS, temp);
             for (int i = statebits.size() - 1; i >= 0; i--) {
-                temp = or2(coFactorTrue(temp, statebitsF[i]), coFactorFalse(temp, statebitsF[i]));
+                temp = Manager::or2(Manager::coFactorTrue(temp, statebitsF[i]), Manager::coFactorFalse(temp, statebitsF[i]));
             }
             computedReachSteps.push_back(temp);
-            c_R_it = or2(c_R, temp);
+            c_R_it = Manager::or2(c_R, temp);
         } while(c_R_it != c_R);
         computedReach = c_R;
         computed = true;

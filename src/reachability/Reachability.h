@@ -9,26 +9,7 @@ namespace ClassProject {
 class Reachability : public ReachabilityInterface {
 // Constructors, destructors, and assignment operators
 public:
-    Reachability(unsigned int stateSize, unsigned int inputSize) : ReachabilityInterface(stateSize, inputSize) {
-        if (stateSize == 0) {
-            throw std::runtime_error("stateSize must be greater than 0");
-        }
-        statebits.resize(stateSize);
-        statebitsF.resize(stateSize);
-        inputbits.resize(inputSize);
-        initialState.resize(stateSize);
-        transitionFunctions.resize(stateSize);
-        for (int i = 0; i < stateSize; i++) {
-            BDD_ID id = createVar("s_" + std::to_string(i));
-            statebits[i] = id;
-            statebitsF[i] = createVar("s_" + std::to_string(i) + "'");
-            initialState[i] = False();
-            transitionFunctions[i] = id;
-        }
-        for (int i = 0; i < inputSize; i++) {
-            inputbits[i] = createVar("i_" + std::to_string(i));
-        }
-    };
+    Reachability(unsigned int stateSize, unsigned int inputSize);
     Reachability(unsigned int stateSize) : Reachability(stateSize, 0) {};
     // Copy constructor
     Reachability(const Reachability &other) = default;
