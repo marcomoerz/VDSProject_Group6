@@ -49,15 +49,12 @@ namespace ClassProject {
                 temp = Manager::coFactorFalse(temp, statebits[i]);
             }
         }
-        //for (int i = inputbits.size() - 1; i >= 0; i--) {
-        //    temp = or2(coFactorTrue(temp, inputbits[i]), coFactorFalse(temp, inputbits[i]));
-        //}
         if (temp == Manager::True()) {
             return true;
         } else if (temp == Manager::False()) {
             return false;
         } else {
-            throw std::runtime_error("Error in isReachable");
+            throw std::runtime_error("Error in isReachable"); // LCOV_EXCL_LINE 
         }
     }
 
@@ -85,7 +82,7 @@ namespace ClassProject {
                 return n;
             }
         }
-        throw std::runtime_error("Error in stateDistance");
+        throw std::runtime_error("Error in stateDistance"); // LCOV_EXCL_LINE 
     }
 
     void Reachability::computeTransitionRelation() {
