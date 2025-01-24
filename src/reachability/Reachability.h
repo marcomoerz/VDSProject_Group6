@@ -39,6 +39,7 @@ protected:
 // Private member functions
 private:
 void compute();
+void computeTransitionRelation();
 
 // Public member variables
 public:

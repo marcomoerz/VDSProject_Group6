@@ -23,6 +23,7 @@ namespace ClassProject {
         for (int i = 0; i < inputSize; i++) {
             inputbits[i] = Manager::createVar("i_" + std::to_string(i));
         }
+        computeTransitionRelation();
     }
 
     const std::vector<BDD_ID> &Reachability::getStates() const {
@@ -61,6 +62,7 @@ namespace ClassProject {
     }
 
     int Reachability::stateDistance(const std::vector<bool> &stateVector) {
+        // TODO maybe binary search
         if (stateVector.size() != statebits.size()) {
             throw std::runtime_error("Size mismatch on stateDistance");
         }
@@ -86,6 +88,13 @@ namespace ClassProject {
         throw std::runtime_error("Error in stateDistance");
     }
 
+    void Reachability::computeTransitionRelation() {
+        transitionRelation = Manager::True();
+        for (int i = 0; i < statebits.size(); i++) {
+            transitionRelation = Manager::and2(transitionRelation, Manager::or2(Manager::and2(statebitsF[i], transitionFunctions[i]), Manager::and2(Manager::neg(statebitsF[i]), Manager::neg(transitionFunctions[i]))));
+        }
+    }
+
     void Reachability::setTransitionFunctions(const std::vector<BDD_ID> &transitionFunctions) {
         if (transitionFunctions.size() != Reachability::transitionFunctions.size()) {
             throw std::runtime_error("Size mismatch on setTransitionFunctions");
@@ -97,14 +106,11 @@ namespace ClassProject {
             }
         }
         Reachability::transitionFunctions = transitionFunctions;
-        transitionRelation = Manager::True();
-        for (int i = 0; i < statebits.size(); i++) {
-            transitionRelation = Manager::and2(transitionRelation, Manager::or2(Manager::and2(statebitsF[i], transitionFunctions[i]), Manager::and2(Manager::neg(statebitsF[i]), Manager::neg(transitionFunctions[i]))));
-        }
-        computed = false;
+        computeTransitionRelation();
     }
 
     void Reachability::setInitState(const std::vector<bool> &stateVector) {
+        // TODO one BDD with all the reacheable states
         if (stateVector.size() != initialState.size()) {
             throw std::runtime_error("Size mismatch on setInitState");
         }
