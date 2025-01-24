@@ -107,6 +107,7 @@ namespace ClassProject {
         }
         Reachability::transitionFunctions = transitionFunctions;
         computeTransitionRelation();
+        computed = false;
     }
 
     void Reachability::setInitState(const std::vector<bool> &stateVector) {
