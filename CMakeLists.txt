@@ -22,7 +22,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 #################################
 option(CLASSPROJECT_COVERAGE "Enable coverage reporting for class project" OFF)
 option(CLASSPROJECT_VISUALIZE "Enable visualization for class project" OFF)
-option(CLASSPROJECT_VISUALIZE_FUNCTIONS "Enable visualization of functions for class project" ON)
 option(CLASSPROJECT_GRAPHVIZ "Enable Graphviz for class project visualization" OFF)
 option(CLASSPROJECT_BENCHMARKS "Build classproject benchmarks" OFF)
 option(CLASSPROJECT_REACHABILITY "Build classproject reachability executable" OFF)
