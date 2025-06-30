@@ -127,25 +127,27 @@ namespace ClassProject {
         BDD_ID c_S = Manager::True();
         BDD_ID c_SS = Manager::True();
         for (int i = 0; i < statebits.size(); i++) {
-            c_S = Manager::and2(c_S, Manager::xnor2(statebits[i], initialState[i]));
-            c_SS = Manager::and2(c_SS, Manager::xnor2(statebits[i], statebitsF[i]));
+            c_S = Manager::and2(c_S, Manager::xnor2(statebits[i], initialState[i])); // characteristic function initial state c_S0(s) (s = s0) -> (s xnor s0)
+            c_SS = Manager::and2(c_SS, Manager::xnor2(statebits[i], statebitsF[i])); // used for renaming (s = s') -> (s xnor s')
         }
         BDD_ID c_R_it = c_S;
         BDD_ID c_R, temp;
         computedReachSteps.push_back(c_S);
         do {
             c_R = c_R_it;
-            temp = Manager::and2(c_R, transitionRelation);
-            for (int i = inputbits.size() - 1; i >= 0; i--) {
+            temp = Manager::and2(c_R, transitionRelation); // c_R * T(s, x, s')
+            for (int i = inputbits.size() - 1; i >= 0; i--) { // Existential quantification of inputbits
                 temp = Manager::or2(Manager::coFactorTrue(temp, inputbits[i]), Manager::coFactorFalse(temp, inputbits[i]));
             }
-            for (int i = statebits.size() - 1; i >= 0; i--) {
+            for (int i = statebits.size() - 1; i >= 0; i--) { // Existential quantification of statebits
                 temp = Manager::or2(Manager::coFactorTrue(temp, statebits[i]), Manager::coFactorFalse(temp, statebits[i]));
             }
-            temp = Manager::and2(c_SS, temp);
-            for (int i = statebits.size() - 1; i >= 0; i--) {
+            // temp = imgR(s')
+            temp = Manager::and2(c_SS, temp); // renaming statebitsF to statebits -> temp = imgR(s') * (s' = s)
+            for (int i = statebits.size() - 1; i >= 0; i--) { // Existential quantification of statebitsF
                 temp = Manager::or2(Manager::coFactorTrue(temp, statebitsF[i]), Manager::coFactorFalse(temp, statebitsF[i]));
             }
+            // temp = imgR(s) -> temp = c_R(s)
             computedReachSteps.push_back(temp);
             c_R_it = Manager::or2(c_R, temp);
         } while(c_R_it != c_R);
